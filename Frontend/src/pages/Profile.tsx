@@ -1,6 +1,6 @@
 import { useParams } from 'react-router-dom'
 import { Link } from 'react-router-dom'
-import { Settings, Edit3, Heart, Eye, Video } from 'lucide-react'
+import { Settings, Edit3 } from 'lucide-react'
 
 const userStats = {
   following: 125,

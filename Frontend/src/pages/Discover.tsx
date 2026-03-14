@@ -71,8 +71,7 @@ export function Discover() {
               className="flex flex-col items-center min-w-[80px]"
             >
               <div className="relative w-16 h-16 mb-2">
-                <div className="w-full h-full rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl"
-003e
+                <div className="w-full h-full rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-2xl">
                   {streamer.avatar}
                 </div>
                 {streamer.status === 'live' && (

@@ -10,11 +10,6 @@ const categories = [
   { id: 'sports', name: '運動', icon: Trophy, color: 'from-green-500 to-green-700' },
 ]
 
-const featuredStreams = [
-  { id: '1', title: '今天一起打排位！', streamer: '主播A', viewers: '10.2k', category: '遊戲', thumbnail: '/api/placeholder/640/360' },
-  { id: '2', title: '深夜聊天室', streamer: '主播B', viewers: '5.8k', category: '聊天', thumbnail: '/api/placeholder/640/360' },
-  { id: '3', title: '吉他彈唱時間', streamer: '主播C', viewers: '3.2k', category: '音樂', thumbnail: '/api/placeholder/640/360' },
-]
 
 const liveStreams = [
   { id: '1', title: '王者榮耀上分之路', streamer: '主播A', viewers: '5.2k', category: '遊戲' },

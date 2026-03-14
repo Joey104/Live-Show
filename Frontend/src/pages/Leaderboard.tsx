@@ -88,7 +88,7 @@ export function Leaderboard() {
 
       {/* Ranking List */}
       <div className="bg-dark-card rounded-xl overflow-hidden">
-        {leaderboard.map((item, index) => (
+        {leaderboard.map((item, _index) => (
           <Link
             key={item.rank}
             to={`/profile/${item.rank}`}

@@ -20,7 +20,7 @@ const giftList = [
 ]
 
 export function LiveRoom() {
-  const { id } = useParams()
+  const { id: _id } = useParams()
   const [activeTab, setActiveTab] = useState('chat')
   const [showGiftModal, setShowGiftModal] = useState(false)
   const [message, setMessage] = useState('')
