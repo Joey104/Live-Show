@@ -1,0 +1,18 @@
+{
+  "name": "live-show-admin",
+  "version": "1.0.0",
+  "description": "Live-Show 后台管理系统 - AdminLTE 本地化部署",
+  "scripts": {
+    "dev": "npx serve .",
+    "build": "echo 'Static files ready for deployment'"
+  },
+  "dependencies": {
+    "admin-lte": "^3.2.0",
+    "jquery": "^3.6.0",
+    "bootstrap": "^4.6.1",
+    "@fortawesome/fontawesome-free": "^5.15.4"
+  },
+  "devDependencies": {
+    "serve": "^14.0.0"
+  }
+}
