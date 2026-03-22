@@ -253,20 +253,90 @@
     <div id="tab-streams" style="display:none">
       <div class="content-header">
         <div class="container-fluid">
-          <h1 class="m-0">直播管理</h1>
+          <div class="d-flex justify-content-between align-items-center">
+            <h1 class="m-0">直播管理</h1>
+            <div>
+              <span class="badge badge-success mr-2" id="live-count-badge">載入中...</span>
+              <button class="btn btn-sm btn-outline-secondary" onclick="loadStreams()">
+                <i class="fas fa-sync-alt"></i> 刷新
+              </button>
+              <small class="text-muted ml-2">每 30 秒自動更新</small>
+            </div>
+          </div>
         </div>
       </div>
       <section class="content">
         <div class="container-fluid">
+          <!-- 直播列表 -->
           <div class="card">
-            <div class="card-header"><h3 class="card-title">直播列表</h3></div>
+            <div class="card-header">
+              <h3 class="card-title"><i class="fas fa-video mr-2"></i>直播列表</h3>
+              <div class="card-tools">
+                <div class="input-group input-group-sm" style="width:200px">
+                  <input type="text" id="stream-search" class="form-control" placeholder="搜尋主播/標題..." oninput="filterStreams()">
+                </div>
+              </div>
+            </div>
             <div class="card-body table-responsive p-0">
-              <table class="table table-hover">
-                <thead><tr><th>ID</th><th>主播</th><th>標題</th><th>觀眾數</th><th>狀態</th><th>開始時間</th><th>操作</th></tr></thead>
+              <table class="table table-hover table-sm">
+                <thead class="bg-light">
+                  <tr>
+                    <th>主播</th>
+                    <th>標題</th>
+                    <th>觀眾數</th>
+                    <th>狀態</th>
+                    <th>開始時間</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
                 <tbody id="streams-table"></tbody>
               </table>
             </div>
           </div>
+
+          <!-- 直播詳情面板（點擊後展開） -->
+          <div class="card d-none" id="stream-detail-card">
+            <div class="card-header bg-primary">
+              <h3 class="card-title text-white">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span id="detail-title">直播詳情</span>
+              </h3>
+              <div class="card-tools">
+                <button class="btn btn-sm btn-outline-light" onclick="closeStreamDetail()">
+                  <i class="fas fa-times"></i> 關閉
+                </button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <!-- 基本資訊 -->
+                <div class="col-md-4">
+                  <h5><i class="fas fa-broadcast-tower mr-2"></i>直播資訊</h5>
+                  <table class="table table-sm table-borderless">
+                    <tr><td class="text-muted">主播</td><td id="detail-streamer">-</td></tr>
+                    <tr><td class="text-muted">觀眾數</td><td><span id="detail-viewers" class="badge badge-info">-</span></td></tr>
+                    <tr><td class="text-muted">狀態</td><td id="detail-status">-</td></tr>
+                    <tr><td class="text-muted">開始時間</td><td id="detail-created">-</td></tr>
+                  </table>
+                  <div id="detail-actions" class="mt-3"></div>
+                </div>
+
+                <!-- 聊天記錄 -->
+                <div class="col-md-8">
+                  <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5><i class="fas fa-comments mr-2"></i>聊天記錄</h5>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="loadStreamChat(currentDetailStreamId)">
+                      <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                  </div>
+                  <div id="chat-messages" style="height:350px;overflow-y:auto;background:#f8f9fa;border-radius:4px;padding:12px;">
+                    <p class="text-center text-muted">點擊直播查看聊天記錄</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
     </div>
@@ -434,9 +504,17 @@ function showTab(name) {
 
   if(name==='dashboard') loadDashboard();
   if(name==='users') loadUsers();
-  if(name==='streams') loadStreams();
   if(name==='gifts') loadGifts();
   if(name==='finance') loadFinance();
+  if(name==='streams') {
+    loadStreams();
+    // 啟動 30 秒自動刷新
+    if(streamRefreshTimer) clearInterval(streamRefreshTimer);
+    streamRefreshTimer = setInterval(loadStreams, 30000);
+  } else {
+    // 離開直播管理時停止刷新
+    if(streamRefreshTimer) { clearInterval(streamRefreshTimer); streamRefreshTimer = null; }
+  }
 }
 
 // ======= API 請求 =======
@@ -533,31 +611,156 @@ async function toggleBan(userId, status) {
 }
 
 // ======= 直播管理 =======
+let allStreams = [];
+let currentDetailStreamId = null;
+let streamRefreshTimer = null;
+
 async function loadStreams() {
   try {
     const data = await api('/streams');
-    const streams = data.data || [];
-    document.getElementById('streams-table').innerHTML = streams.map(s => `
-      <tr>
-        <td><small class="text-muted">${s.id.substring(0,8)}...</small></td>
-        <td>${s.streamer?.username || '-'}</td>
-        <td>${s.title}</td>
-        <td>👁 ${s.viewers || 0}</td>
-        <td><span class="badge badge-${s.status==='live'?'success':'secondary'}">${s.status==='live'?'直播中':'已結束'}</span></td>
-        <td>${new Date(s.createdAt).toLocaleString('zh-TW')}</td>
-        <td>
-          ${s.status==='live' ? `<button class="btn btn-xs btn-danger" onclick="forceEndStream('${s.id}')">強制結束</button>` : '-'}
-        </td>
-      </tr>
-    `).join('') || '<tr><td colspan="7" class="text-center text-muted">無直播資料</td></tr>';
+    allStreams = data.data || [];
+    const liveCount = allStreams.filter(s => s.status === 'live').length;
+    document.getElementById('live-count-badge').textContent = `🔴 直播中 ${liveCount} 場`;
+    renderStreams(allStreams);
+
+    // 如果詳情面板開著，同步刷新觀眾數
+    if (currentDetailStreamId) {
+      const current = allStreams.find(s => s.id === currentDetailStreamId);
+      if (current) document.getElementById('detail-viewers').textContent = current.viewers || 0;
+    }
   } catch(e) {
-    document.getElementById('streams-table').innerHTML = '<tr><td colspan="7" class="text-center text-danger">載入失敗</td></tr>';
+    document.getElementById('streams-table').innerHTML = '<tr><td colspan="6" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+function renderStreams(streams) {
+  const search = document.getElementById('stream-search')?.value?.toLowerCase() || '';
+  const filtered = streams.filter(s =>
+    !search ||
+    (s.streamer?.username || '').toLowerCase().includes(search) ||
+    s.title.toLowerCase().includes(search)
+  );
+
+  document.getElementById('streams-table').innerHTML = filtered.map(s => `
+    <tr style="cursor:pointer" onclick="showStreamDetail('${s.id}')">
+      <td><i class="fas fa-user-circle text-muted mr-1"></i>${s.streamer?.username || '-'}</td>
+      <td>${s.title}</td>
+      <td>
+        <span class="badge badge-info">👁 ${s.viewers || 0}</span>
+      </td>
+      <td>
+        <span class="badge badge-${s.status==='live'?'success':'secondary'}">
+          ${s.status==='live'?'🔴 直播中':'⚫ 已結束'}
+        </span>
+      </td>
+      <td><small>${new Date(s.createdAt).toLocaleString('zh-TW')}</small></td>
+      <td onclick="event.stopPropagation()">
+        <button class="btn btn-xs btn-info mr-1" onclick="showStreamDetail('${s.id}')">
+          <i class="fas fa-eye"></i> 詳情
+        </button>
+        ${s.status==='live' ? `
+          <button class="btn btn-xs btn-danger" onclick="forceEndStream('${s.id}')">
+            <i class="fas fa-stop"></i> 結束
+          </button>
+        ` : ''}
+      </td>
+    </tr>
+  `).join('') || '<tr><td colspan="6" class="text-center text-muted py-3">無直播資料</td></tr>';
+}
+
+function filterStreams() {
+  renderStreams(allStreams);
+}
+
+async function showStreamDetail(streamId) {
+  currentDetailStreamId = streamId;
+  const stream = allStreams.find(s => s.id === streamId);
+  if (!stream) return;
+
+  // 顯示面板
+  document.getElementById('stream-detail-card').classList.remove('d-none');
+
+  // 填入基本資訊
+  document.getElementById('detail-title').textContent = stream.title;
+  document.getElementById('detail-streamer').textContent = stream.streamer?.username || '-';
+  document.getElementById('detail-viewers').textContent = stream.viewers || 0;
+  document.getElementById('detail-status').innerHTML = `<span class="badge badge-${stream.status==='live'?'success':'secondary'}">${stream.status==='live'?'🔴 直播中':'⚫ 已結束'}</span>`;
+  document.getElementById('detail-created').textContent = new Date(stream.createdAt).toLocaleString('zh-TW');
+
+  // 操作按鈕
+  document.getElementById('detail-actions').innerHTML = stream.status === 'live' ? `
+    <button class="btn btn-danger btn-sm btn-block" onclick="forceEndStream('${stream.id}')">
+      <i class="fas fa-stop mr-1"></i> 強制結束直播
+    </button>
+  ` : '';
+
+  // 載入聊天記錄
+  await loadStreamChat(streamId);
+
+  // 滾動到詳情面板
+  document.getElementById('stream-detail-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+function closeStreamDetail() {
+  currentDetailStreamId = null;
+  document.getElementById('stream-detail-card').classList.add('d-none');
+}
+
+async function loadStreamChat(streamId) {
+  const container = document.getElementById('chat-messages');
+  container.innerHTML = '<p class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> 載入中...</p>';
+
+  try {
+    const data = await api('/chat/' + streamId + '?limit=100');
+    const messages = data.data || [];
+
+    if (messages.length === 0) {
+      container.innerHTML = '<p class="text-center text-muted py-4"><i class="fas fa-comment-slash mr-2"></i>此直播尚無聊天記錄</p>';
+      return;
+    }
+
+    container.innerHTML = messages.map(m => `
+      <div class="d-flex align-items-start mb-2 chat-msg" data-id="${m.id}">
+        <div class="flex-grow-1 bg-white rounded p-2 shadow-sm" style="font-size:13px">
+          <div class="d-flex justify-content-between">
+            <strong class="text-primary">${m.user?.username || '匿名'}</strong>
+            <small class="text-muted">${new Date(m.createdAt).toLocaleTimeString('zh-TW')}</small>
+          </div>
+          <div class="mt-1">${m.content || m.message || ''}</div>
+        </div>
+        <button class="btn btn-xs btn-outline-danger ml-2 flex-shrink-0" onclick="deleteChatMsg('${m.id}','${streamId}')" title="刪除此訊息">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    `).join('');
+
+    // 滾到最底
+    container.scrollTop = container.scrollHeight;
+  } catch(e) {
+    container.innerHTML = '<p class="text-center text-danger">載入失敗</p>';
+  }
+}
+
+async function deleteChatMsg(msgId, streamId) {
+  if (!confirm('確定要刪除此訊息？')) return;
+  try {
+    await api('/chat/' + msgId, { method: 'DELETE' });
+    // 移除該訊息 DOM
+    const el = document.querySelector(`.chat-msg[data-id="${msgId}"]`);
+    if (el) {
+      el.style.opacity = '0.3';
+      el.style.textDecoration = 'line-through';
+      setTimeout(() => el.remove(), 500);
+    }
+  } catch(e) {
+    alert('刪除失敗：' + e.message);
   }
 }
 
 async function forceEndStream(streamId) {
   if (!confirm('確定要強制結束此直播？')) return;
   await api('/streams/' + streamId + '/end', { method: 'POST' });
+  closeStreamDetail();
   loadStreams();
 }
 
