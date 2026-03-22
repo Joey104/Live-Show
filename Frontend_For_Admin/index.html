@@ -132,6 +132,16 @@
               <i class="nav-icon fas fa-cog"></i><p>系統設定</p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" onclick="showTab('streamer-applications')">
+              <i class="nav-icon fas fa-star"></i><p>主播申請</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" onclick="showTab('reports')">
+              <i class="nav-icon fas fa-flag"></i><p>舉報管理</p>
+            </a>
+          </li>
         </ul>
       </nav>
     </div>
@@ -319,7 +329,7 @@
             </div>
             <div class="card-body">
               <div class="row">
-                <!-- 基本資訊 -->
+                <!-- 基本資訊 + 收益統計 -->
                 <div class="col-md-4">
                   <h5><i class="fas fa-broadcast-tower mr-2"></i>直播資訊</h5>
                   <table class="table table-sm table-borderless">
@@ -328,6 +338,22 @@
                     <tr><td class="text-muted">狀態</td><td id="detail-status">-</td></tr>
                     <tr><td class="text-muted">開始時間</td><td id="detail-created">-</td></tr>
                   </table>
+                  
+                  <!-- 本場收益 -->
+                  <div class="card card-outline card-success mt-3" id="revenue-card" style="display:none">
+                    <div class="card-header">
+                      <h6 class="card-title"><i class="fas fa-money-bill-wave mr-2"></i>本場收益</h6>
+                    </div>
+                    <div class="card-body p-2">
+                      <table class="table table-sm table-borderless">
+                        <tr><td class="text-muted">總金額</td><td><strong id="revenue-amount">-</strong></td></tr>
+                        <tr><td class="text-muted">禮物數</td><td id="revenue-count">-</td></tr>
+                      </table>
+                      <p class="text-muted text-sm mb-0">Top 送禮者：</p>
+                      <ul class="list-unstyled text-sm" id="revenue-top-senders" style="max-height:150px;overflow-y:auto;"></ul>
+                    </div>
+                  </div>
+                  
                   <div id="detail-actions" class="mt-3"></div>
                 </div>
 
@@ -476,6 +502,68 @@
               <table class="table table-hover">
                 <thead><tr><th>詞語</th><th>等級</th><th>操作</th></tr></thead>
                 <tbody id="sensitive-words-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 主播申請管理 -->
+    <div id="tab-streamer-applications" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">主播申請審核</h1>
+        </div>
+      </div>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">待審核申請列表</h3>
+              <div class="card-tools">
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadStreamerApplications()">
+                  <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+              </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover">
+                <thead>
+                  <tr><th>用戶名</th><th>Email</th><th>申請時間</th><th>操作</th></tr>
+                </thead>
+                <tbody id="streamer-applications-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 舉報管理 -->
+    <div id="tab-reports" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">舉報管理</h1>
+        </div>
+      </div>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">舉報列表</h3>
+              <div class="card-tools">
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadReports()">
+                  <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+              </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover">
+                <thead>
+                  <tr><th>舉報類型</th><th>被舉報用戶</th><th>原因</th><th>狀態</th><th>操作</th></tr>
+                </thead>
+                <tbody id="reports-table"></tbody>
               </table>
             </div>
           </div>
@@ -665,7 +753,7 @@ if (TOKEN) {
 
 // ======= Tab 切換 =======
 function showTab(name) {
-  ['dashboard','users','streams','gifts','finance','revenue','settings'].forEach(t => {
+  ['dashboard','users','streams','gifts','finance','revenue','settings','streamer-applications','reports'].forEach(t => {
     document.getElementById('tab-'+t).style.display = t===name ? 'block' : 'none';
   });
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -677,6 +765,8 @@ function showTab(name) {
   if(name==='finance') loadFinance();
   if(name==='revenue') loadRevenueStats();
   if(name==='settings') loadSettings();
+  if(name==='streamer-applications') loadStreamerApplications();
+  if(name==='reports') loadReports();
   if(name==='streams') {
     loadStreams();
     if(streamRefreshTimer) clearInterval(streamRefreshTimer);
@@ -767,24 +857,71 @@ async function showUserDetail(userId) {
   try {
     const data = await api('/admin/users?limit=1000');
     const user = (data.data || []).find(u => u.id === userId);
-    if (!user) return alert('用戶不存在');
+    if (!user) { showToast('用戶不存在', 'error'); return; }
 
     const content = `
-      <table class="table table-sm table-borderless">
-        <tr><td class="text-muted">用戶ID</td><td>${user.id}</td></tr>
-        <tr><td class="text-muted">用戶名</td><td><strong>${user.username}</strong></td></tr>
-        <tr><td class="text-muted">Email</td><td>${user.email || '-'}</td></tr>
-        <tr><td class="text-muted">餘額</td><td>💰 ${user.balance}</td></tr>
-        <tr><td class="text-muted">身份</td><td>${user.isAdmin ? '管理員' : (user.isStreamer ? '主播' : '觀眾')}</td></tr>
-        <tr><td class="text-muted">狀態</td><td><span class="badge badge-${user.status==='active'?'success':'danger'}">${user.status}</span></td></tr>
-        <tr><td class="text-muted">創建時間</td><td>${new Date(user.createdAt).toLocaleString('zh-TW')}</td></tr>
-      </table>
+      <ul class="nav nav-tabs mb-3" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#user-info-tab">基本資訊</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#user-transactions-tab">交易記錄</a></li>
+      </ul>
+      <div class="tab-content">
+        <div id="user-info-tab" class="tab-pane fade show active">
+          <table class="table table-sm table-borderless">
+            <tr><td class="text-muted">用戶ID</td><td>${user.id}</td></tr>
+            <tr><td class="text-muted">用戶名</td><td><strong>${user.username}</strong></td></tr>
+            <tr><td class="text-muted">Email</td><td>${user.email || '-'}</td></tr>
+            <tr><td class="text-muted">餘額</td><td>💰 ${user.balance}</td></tr>
+            <tr><td class="text-muted">身份</td><td>${user.isAdmin ? '管理員' : (user.isStreamer ? '主播' : '觀眾')}</td></tr>
+            <tr><td class="text-muted">狀態</td><td><span class="badge badge-${user.status==='active'?'success':'danger'}">${user.status}</span></td></tr>
+            <tr><td class="text-muted">創建時間</td><td>${new Date(user.createdAt).toLocaleString('zh-TW')}</td></tr>
+          </table>
+        </div>
+        <div id="user-transactions-tab" class="tab-pane fade">
+          <div id="user-transactions-content" style="max-height:300px;overflow-y:auto;">
+            <p class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> 載入中...</p>
+          </div>
+        </div>
+      </div>
     `;
     document.getElementById('user-detail-content').innerHTML = content;
     document.getElementById('reset-password-btn').setAttribute('data-user-id', userId);
+    
+    // 新增一個按鈕用於查看交易記錄
+    await loadUserTransactions(userId);
+    
     $('#user-detail-modal').modal('show');
   } catch(e) {
-    alert('載入失敗：' + e.message);
+    showToast('載入失敗：' + e.message, 'error');
+  }
+}
+
+async function loadUserTransactions(userId) {
+  try {
+    const data = await api('/admin/users/' + userId + '/transactions');
+    const transactions = data.data || [];
+    
+    const content = transactions.length > 0 ? `
+      <table class="table table-sm table-striped">
+        <thead><tr><th>類型</th><th>金額</th><th>餘額</th><th>說明</th><th>時間</th></tr></thead>
+        <tbody>
+          ${transactions.map(t => `
+            <tr>
+              <td><span class="badge badge-${t.type==='deposit'?'success':t.type==='withdrawal'?'warning':'info'}">${t.type}</span></td>
+              <td class="${t.amount > 0 ? 'text-success' : 'text-danger'}">${t.amount > 0 ? '+' : ''}${t.amount}</td>
+              <td>${t.balance || '-'}</td>
+              <td>${t.description || '-'}</td>
+              <td><small>${new Date(t.createdAt).toLocaleString('zh-TW')}</small></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : '<p class="text-center text-muted">暫無交易記錄</p>';
+    
+    const el = document.getElementById('user-transactions-content');
+    if (el) el.innerHTML = content;
+  } catch(e) {
+    const el = document.getElementById('user-transactions-content');
+    if (el) el.innerHTML = '<p class="text-center text-danger">載入失敗</p>';
   }
 }
 
@@ -794,10 +931,10 @@ async function resetUserPassword() {
 
   try {
     const result = await api('/admin/users/' + userId + '/reset-password', { method: 'POST' });
-    alert('新密碼：' + result.data.newPassword + '\n\n請告知用戶！');
+    showToast('新密碼：' + result.data.newPassword + ' (已複製到剪貼板，請告知用戶)', 'success', 5000);
     $('#user-detail-modal').modal('hide');
   } catch(e) {
-    alert('重置失敗：' + e.message);
+    showToast('重置失敗：' + e.message, 'error');
   }
 }
 
@@ -902,11 +1039,31 @@ async function showStreamDetail(streamId) {
     </button>
   ` : '';
 
-  // 載入聊天記錄
+  // 載入聊天記錄和收益統計
   await loadStreamChat(streamId);
+  await loadStreamRevenue(streamId);
 
   // 滾動到詳情面板
   document.getElementById('stream-detail-card').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function loadStreamRevenue(streamId) {
+  try {
+    const data = await api('/admin/streams/' + streamId + '/revenue');
+    const revenue = data.data || {};
+    
+    document.getElementById('revenue-card').style.display = 'block';
+    document.getElementById('revenue-amount').textContent = '💰 ' + (revenue.totalAmount || 0);
+    document.getElementById('revenue-count').textContent = revenue.giftCount || 0;
+    
+    const topSendersHtml = (revenue.topSenders || []).map(s => `
+      <li><small>${s.username}: <strong>${s.amount}</strong></small></li>
+    `).join('');
+    
+    document.getElementById('revenue-top-senders').innerHTML = topSendersHtml || '<li><small class="text-muted">暫無數據</small></li>';
+  } catch(e) {
+    document.getElementById('revenue-card').style.display = 'none';
+  }
 }
 
 function closeStreamDetail() {
@@ -961,7 +1118,7 @@ async function deleteChatMsg(msgId, streamId) {
       setTimeout(() => el.remove(), 500);
     }
   } catch(e) {
-    alert('刪除失敗：' + e.message);
+    showToast('刪除失敗：' + e.message, 'error');
   }
 }
 
@@ -983,13 +1140,34 @@ async function loadGifts() {
         <td>${g.name}</td>
         <td>💰 ${g.price}</td>
         <td>
+          <span class="badge badge-${g.isActive !== false ? 'success' : 'secondary'} mr-2">
+            ${g.isActive !== false ? '上架中' : '已下架'}
+          </span>
+        </td>
+        <td>
           <button class="btn btn-xs btn-info mr-1" onclick="editGift('${g.id}','${g.icon}','${g.name}',${g.price})">編輯</button>
+          <button class="btn btn-xs btn-${g.isActive !== false ? 'warning' : 'success'} mr-1" onclick="toggleGiftActive('${g.id}')">
+            ${g.isActive !== false ? '下架' : '上架'}
+          </button>
           <button class="btn btn-xs btn-danger" onclick="deleteGift('${g.id}')">刪除</button>
         </td>
       </tr>
-    `).join('') || '<tr><td colspan="4" class="text-center text-muted">尚無禮物，請新增</td></tr>';
+    `).join('') || '<tr><td colspan="5" class="text-center text-muted">尚無禮物，請新增</td></tr>';
   } catch(e) {
-    document.getElementById('gifts-table').innerHTML = '<tr><td colspan="4" class="text-center text-danger">載入失敗</td></tr>';
+    document.getElementById('gifts-table').innerHTML = '<tr><td colspan="5" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+async function toggleGiftActive(giftId) {
+  showSpinner('更新中...');
+  try {
+    const data = await api('/admin/gifts/' + giftId + '/toggle', { method: 'POST' });
+    showToast(data.message || (data.data.isActive ? '已上架' : '已下架'), 'success');
+    loadGifts();
+  } catch(e) {
+    showToast('操作失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
   }
 }
 
@@ -1016,7 +1194,7 @@ async function saveGift() {
   const icon = document.getElementById('gift-icon').value;
   const name = document.getElementById('gift-name').value;
   const price = parseInt(document.getElementById('gift-price').value);
-  if (!name || !price) return alert('請填寫完整');
+  if (!name || !price) { showToast('請填寫完整資料', 'warning'); return; }
 
   if (giftId) {
     await api('/admin/gifts/' + giftId, {
@@ -1117,7 +1295,7 @@ function showAnnouncementModal() {
 async function saveAnnouncement() {
   const title = document.getElementById('announcement-title').value;
   const content = document.getElementById('announcement-content').value;
-  if (!title || !content) return alert('請填寫完整');
+  if (!title || !content) { showToast('請填寫完整資料', 'warning'); return; }
   await api('/admin/announcements', { method: 'POST', body: JSON.stringify({ title, content }) });
   $('#announcement-modal').modal('hide');
   loadAnnouncements();
@@ -1135,7 +1313,7 @@ function showSensitiveWordModal() {
 async function saveSensitiveWord() {
   const word = document.getElementById('sensitive-word-input').value;
   const level = document.getElementById('sensitive-word-level').value;
-  if (!word) return alert('請輸入詞語');
+  if (!word) { showToast('請輸入詞語', 'warning'); return; }
   await api('/admin/sensitive-words', { method: 'POST', body: JSON.stringify({ word, level }) });
   $('#sensitive-word-modal').modal('hide');
   loadSensitiveWords();
@@ -1144,6 +1322,139 @@ async function deleteSensitiveWord(wordId) {
   if (!confirm('確定要刪除此敏感詞？')) return;
   await api('/admin/sensitive-words/' + wordId, { method: 'DELETE' });
   loadSensitiveWords();
+}
+
+// ======= 主播申請管理 =======
+async function loadStreamerApplications() {
+  showSpinner('載入主播申請...');
+  try {
+    const data = await api('/admin/streamer-applications');
+    const applications = data.data || [];
+    document.getElementById('streamer-applications-table').innerHTML = applications.map(app => `
+      <tr>
+        <td>${app.username}</td>
+        <td>${app.email || '-'}</td>
+        <td>${new Date(app.createdAt).toLocaleString('zh-TW')}</td>
+        <td>
+          <button class="btn btn-xs btn-success mr-1" onclick="approveStreamer('${app.id}','${app.username}')">
+            <i class="fas fa-check mr-1"></i>批准
+          </button>
+          <button class="btn btn-xs btn-danger" onclick="rejectStreamer('${app.id}','${app.username}')">
+            <i class="fas fa-times mr-1"></i>拒絕
+          </button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" class="text-center text-muted">暫無待審核申請</td></tr>';
+  } catch(e) {
+    showToast('載入失敗: ' + e.message, 'error');
+    document.getElementById('streamer-applications-table').innerHTML = '<tr><td colspan="4" class="text-center text-danger">載入失敗</td></tr>';
+  } finally {
+    hideSpinner();
+  }
+}
+
+async function approveStreamer(userId, username) {
+  if (!confirm('確定要批准 ' + username + ' 的主播申請？')) return;
+  showSpinner('處理中...');
+  try {
+    await api('/admin/streamer-applications/' + userId + '/approve', { method: 'POST' });
+    showToast('已批准 ' + username + ' 的申請', 'success');
+    loadStreamerApplications();
+  } catch(e) {
+    showToast('操作失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+async function rejectStreamer(userId, username) {
+  if (!confirm('確定要拒絕 ' + username + ' 的主播申請？')) return;
+  showSpinner('處理中...');
+  try {
+    await api('/admin/streamer-applications/' + userId + '/reject', { method: 'POST' });
+    showToast('已拒絕 ' + username + ' 的申請', 'success');
+    loadStreamerApplications();
+  } catch(e) {
+    showToast('操作失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+// ======= 舉報管理 =======
+async function loadReports() {
+  showSpinner('載入舉報...');
+  try {
+    const data = await api('/admin/reports');
+    const reports = data.data || [];
+    
+    // 獲取用戶信息以顯示被舉報用戶名
+    const allUsers = await api('/admin/users?limit=1000');
+    const userMap = {};
+    (allUsers.data || []).forEach(u => { userMap[u.id] = u.username; });
+    
+    document.getElementById('reports-table').innerHTML = reports.map(r => {
+      const statusClass = r.status === 'resolved' ? 'success' : r.status === 'dismissed' ? 'secondary' : 'warning';
+      const statusText = r.status === 'resolved' ? '已處理' : r.status === 'dismissed' ? '已忽略' : '待處理';
+      return `
+        <tr>
+          <td><span class="badge badge-info">${r.type}</span></td>
+          <td>${userMap[r.targetId] || r.targetId}</td>
+          <td>${r.reason}</td>
+          <td><span class="badge badge-${statusClass}">${statusText}</span></td>
+          <td>
+            ${r.status === 'pending' ? `
+              <button class="btn btn-xs btn-success mr-1" onclick="resolveReport('${r.id}')">
+                <i class="fas fa-check mr-1"></i>處理
+              </button>
+              <button class="btn btn-xs btn-secondary" onclick="dismissReport('${r.id}')">
+                <i class="fas fa-times mr-1"></i>忽略
+              </button>
+            ` : '已處理'}
+          </td>
+        </tr>
+      `;
+    }).join('') || '<tr><td colspan="5" class="text-center text-muted">暫無舉報</td></tr>';
+  } catch(e) {
+    showToast('載入失敗: ' + e.message, 'error');
+    document.getElementById('reports-table').innerHTML = '<tr><td colspan="5" class="text-center text-danger">載入失敗</td></tr>';
+  } finally {
+    hideSpinner();
+  }
+}
+
+async function resolveReport(reportId) {
+  if (!confirm('確定要標記此舉報為已處理？')) return;
+  showSpinner('處理中...');
+  try {
+    await api('/admin/reports/' + reportId, { 
+      method: 'PUT',
+      body: JSON.stringify({ status: 'resolved' })
+    });
+    showToast('已標記為已處理', 'success');
+    loadReports();
+  } catch(e) {
+    showToast('操作失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+async function dismissReport(reportId) {
+  if (!confirm('確定要忽略此舉報？')) return;
+  showSpinner('處理中...');
+  try {
+    await api('/admin/reports/' + reportId, { 
+      method: 'PUT',
+      body: JSON.stringify({ status: 'dismissed' })
+    });
+    showToast('已忽略此舉報', 'success');
+    loadReports();
+  } catch(e) {
+    showToast('操作失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
 }
 
 // ======= Spinner 載入狀態 (7.5) =======
