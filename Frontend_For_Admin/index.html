@@ -3340,3 +3340,250 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 </body>
 </html>
+<script>
+// ===== P0 補強 =====
+
+// 8.1 設定持久化：確認使用固定路徑（已在後端修改，前端無需調整）
+
+// 8.2 新增管理員功能
+async function addAdminByUsername() {
+  const username = prompt('請輸入要設為管理員的用戶名：');
+  if (!username) return;
+  const users = await api('/admin/users?search=' + encodeURIComponent(username) + '&limit=5');
+  const user = (users.data || []).find(u => u.username === username);
+  if (!user) { showToast('找不到用戶：' + username, 'error'); return; }
+  await api('/admin/users/' + user.id, { method: 'PUT', body: JSON.stringify({ isAdmin: true }) });
+  showToast('✅ ' + username + ' 已設為管理員', 'success');
+  if (typeof loadSettings === 'function') loadSettings();
+}
+
+// 9.1.2 頁面標題動態更新
+const TAB_TITLES = {
+  dashboard: '儀表板', users: '用戶管理', streams: '直播管理',
+  gifts: '禮物管理', finance: '財務管理', revenue: '收益分析',
+  markets: '預測市場', applications: '主播申請', reports: '舉報管理',
+  settings: '系統設定'
+};
+const _origShowTab = typeof showTab === 'function' ? showTab : null;
+// 覆蓋 showTab 加入 title 更新
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[onclick*="showTab"]').forEach(el => {
+    const match = el.getAttribute('onclick')?.match(/showTab\('(\w+)'\)/);
+    if (match) {
+      const tabName = match[1];
+      el.addEventListener('click', () => {
+        document.title = (TAB_TITLES[tabName] || tabName) + ' - Live-Show 後台';
+      });
+    }
+  });
+});
+
+// 9.1.5 Esc 關閉所有 Modal
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal.show').forEach(m => {
+      if (typeof $ !== 'undefined') $(m).modal('hide');
+    });
+  }
+});
+
+// 9.3.2 手機版表格橫向滾動（自動套用）
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.table-responsive').forEach(el => {
+    el.style.overflowX = 'auto';
+    el.style.webkitOverflowScrolling = 'touch';
+  });
+});
+
+// 9.3.3 手機版按鈕大小優化
+const mobileStyle = document.createElement('style');
+mobileStyle.textContent = `
+  @media (max-width: 768px) {
+    .btn-xs { min-height: 32px; min-width: 44px; padding: 4px 8px; font-size: 12px; }
+    .btn-sm { min-height: 36px; padding: 6px 12px; }
+    .table td, .table th { white-space: nowrap; }
+    .table-responsive { -webkit-overflow-scrolling: touch; }
+  }
+`;
+document.head.appendChild(mobileStyle);
+
+// 8.5 系統版本資訊
+async function loadSystemInfo() {
+  try {
+    const data = await api('/admin/system/info');
+    const el = document.getElementById('system-version');
+    if (el && data.data) {
+      el.textContent = `後端 v${data.data.version || '1.0.0'} | Node ${data.data.nodeVersion || process?.version || 'N/A'} | 啟動時間: ${new Date(data.data.uptime || Date.now()).toLocaleString('zh-TW')}`;
+    }
+  } catch {}
+}
+
+// 4.2.1 禮物銷售趨勢圖
+async function loadGiftSalesTrend() {
+  try {
+    const data = await api('/admin/gifts/sales-trend');
+    const ctx = document.getElementById('gift-trend-chart');
+    if (ctx && data.data) {
+      if (window._giftTrendChart) window._giftTrendChart.destroy();
+      window._giftTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: (data.data.dates || []).map(d => d.slice(5)),
+          datasets: [{
+            label: '禮物銷售金額',
+            data: data.data.amounts || [],
+            borderColor: '#FF6B35',
+            backgroundColor: 'rgba(255,107,53,0.1)',
+            fill: true, tension: 0.4
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { display: false } } }
+      });
+    }
+  } catch {}
+}
+
+// 4.2.3 Top 收禮主播排行（複用收益 API）
+async function loadTopReceivers() {
+  try {
+    const data = await api('/admin/revenue/stats');
+    const el = document.getElementById('top-receivers-table');
+    if (!el) return;
+    const streamers = data.data?.byStreamer || [];
+    el.innerHTML = streamers.slice(0, 10).map((s, i) => `
+      <tr><td>${i+1}</td><td>${s.username || s.streamerId || '-'}</td>
+      <td>💰 ${s.amount || 0}</td></tr>
+    `).join('') || '<tr><td colspan="3" class="text-center text-muted">暫無資料</td></tr>';
+  } catch {}
+}
+
+// 5.2.2 充值趨勢圖（使用每日統計）
+async function loadDepositTrend() {
+  try {
+    const data = await api('/admin/stats/daily');
+    const ctx = document.getElementById('deposit-chart');
+    if (ctx && data.data) {
+      if (window._depositChart) window._depositChart.destroy();
+      window._depositChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: (data.data || []).map(d => d.date?.slice(5) || ''),
+          datasets: [{
+            label: '平台收入',
+            data: (data.data || []).map(d => d.revenue || 0),
+            borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,0.1)',
+            fill: true, tension: 0.4
+          }]
+        },
+        options: { responsive: true }
+      });
+    }
+  } catch {}
+}
+
+// 6.1.3 主播收益排行篩選（本週/本月）
+let currentRevenuePeriod = 'all';
+function setRevenuePeriod(period) {
+  currentRevenuePeriod = period;
+  document.querySelectorAll('.revenue-period-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-period="${period}"]`)?.classList.add('active');
+  if (typeof loadRevenueStats === 'function') loadRevenueStats();
+}
+
+// 7.5 管理員手動創建預測市場
+async function createMarketModal() {
+  const streamId = prompt('請輸入直播間 ID：');
+  if (!streamId) return;
+  const title = prompt('請輸入預測題目：');
+  if (!title) return;
+  try {
+    await api('/markets', {
+      method: 'POST',
+      body: JSON.stringify({ streamId, title, status: 'active' })
+    });
+    showToast('✅ 預測市場已創建', 'success');
+    if (typeof loadMarkets === 'function') loadMarkets();
+  } catch(e) {
+    showToast('創建失敗：' + e.message, 'error');
+  }
+}
+
+// 2.1.6 導出用戶 CSV
+function exportUsersCSV() {
+  const rows = document.querySelectorAll('#users-table tr');
+  if (!rows.length) { showToast('無數據可導出', 'warning'); return; }
+  const headers = ['ID', '用戶名', 'Email', '餘額', '主播', '管理員', '狀態'];
+  const csvRows = [headers.join(',')];
+  rows.forEach(row => {
+    const cells = Array.from(row.querySelectorAll('td')).map(td => `"${td.textContent.trim().replace(/"/g, '""')}"`);
+    if (cells.length) csvRows.push(cells.join(','));
+  });
+  const blob = new Blob(['\uFEFF' + csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `users_${new Date().toISOString().slice(0,10)}.csv`;
+  link.click();
+  showToast('✅ CSV 已下載', 'success');
+}
+</script>
+<script>
+// ===== P2 最終補強 =====
+
+// 2.2.5 用戶備註功能
+const USER_NOTES_KEY = 'admin_user_notes';
+function getUserNotes() { try { return JSON.parse(localStorage.getItem(USER_NOTES_KEY) || '{}'); } catch { return {}; } }
+function saveUserNote(userId, note) {
+  const notes = getUserNotes();
+  notes[userId] = { note, updatedAt: new Date().toISOString() };
+  localStorage.setItem(USER_NOTES_KEY, JSON.stringify(notes));
+  showToast('✅ 備註已儲存', 'success');
+}
+function editUserNote(userId, currentNote) {
+  const note = prompt('輸入用戶備註（管理員內部）：', currentNote || '');
+  if (note !== null) saveUserNote(userId, note);
+}
+
+// 3.2.5 直播間封面圖顯示（在詳情面板加入）
+function showStreamCover(coverUrl) {
+  if (!coverUrl) return '';
+  return `<img src="${coverUrl}" style="width:100%;max-height:120px;object-fit:cover;border-radius:4px;margin-bottom:8px" onerror="this.style.display='none'">`;
+}
+
+// 4.1.4 批量設定禮物上下架
+let selectedGifts = new Set();
+function toggleGiftSelect(giftId) {
+  if (selectedGifts.has(giftId)) selectedGifts.delete(giftId);
+  else selectedGifts.add(giftId);
+  document.getElementById('batch-gifts-btn').style.display = selectedGifts.size > 0 ? 'inline-block' : 'none';
+}
+async function batchToggleGifts(active) {
+  if (!selectedGifts.size) return;
+  const label = active ? '上架' : '下架';
+  for (const giftId of selectedGifts) {
+    await api('/admin/gifts/' + giftId, { method: 'PUT', body: JSON.stringify({ isActive: active }) });
+  }
+  showToast(`✅ 已批量${label} ${selectedGifts.size} 個禮物`, 'success');
+  selectedGifts.clear();
+  document.getElementById('batch-gifts-btn').style.display = 'none';
+  loadGifts();
+}
+
+// 9.1.6 暗色/亮色主題切換
+let isDarkMode = localStorage.getItem('admin_theme') !== 'light';
+function toggleTheme() {
+  isDarkMode = !isDarkMode;
+  localStorage.setItem('admin_theme', isDarkMode ? 'dark' : 'light');
+  applyTheme();
+}
+function applyTheme() {
+  if (isDarkMode) {
+    document.body.classList.add('dark-mode');
+    document.querySelector('.main-sidebar')?.classList.replace('sidebar-dark-primary', 'sidebar-dark-primary');
+  } else {
+    document.body.classList.remove('dark-mode');
+  }
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.innerHTML = isDarkMode ? '☀️ 亮色模式' : '🌙 暗色模式';
+}
+document.addEventListener('DOMContentLoaded', applyTheme);
+</script>
