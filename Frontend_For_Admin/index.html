@@ -3,414 +3,565 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live-Show 后台管理</title>
-  
-  <!-- Google Font: Source Sans Pro -->
+  <title>Live-Show 後台管理</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700&display=fallback">
-  <!-- Font Awesome (本地) -->
   <link rel="stylesheet" href="assets/css/fontawesome.min.css">
-  <!-- Bootstrap 4 (本地) -->
   <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-  <!-- Theme style (本地) -->
   <link rel="stylesheet" href="assets/css/adminlte.min.css">
-  
   <style>
-    :root {
-      --primary: #FF6B35;
-      --primary-dark: #E85A2B;
-    }
+    :root { --primary: #FF6B35; --primary-dark: #E85A2B; }
     .bg-primary { background-color: var(--primary) !important; }
     .btn-primary { background-color: var(--primary); border-color: var(--primary); }
     .btn-primary:hover { background-color: var(--primary-dark); border-color: var(--primary-dark); }
     .nav-sidebar .nav-link.active { background-color: var(--primary); }
-    
-    /* FontAwesome 字体路径由 fontawesome.min.css 提供 */
+    .brand-link { background-color: var(--primary-dark) !important; }
+    #login-screen { position:fixed;inset:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;z-index:9999; }
+    .login-box { background:#fff;padding:40px;border-radius:12px;width:360px;box-shadow:0 20px 40px rgba(0,0,0,0.3); }
   </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
-<div class="wrapper">
 
-  <!-- 顶部导航栏 -->
+<!-- 登入畫面 -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="text-center mb-4">
+      <div style="font-size:48px">🎥</div>
+      <h3 class="mt-2">Live-Show 後台</h3>
+      <p class="text-muted">管理員登入</p>
+    </div>
+    <div id="login-error" class="alert alert-danger d-none"></div>
+    <div class="form-group">
+      <input type="text" id="login-username" class="form-control form-control-lg" placeholder="用戶名或 Email" value="admin">
+    </div>
+    <div class="form-group">
+      <input type="password" id="login-password" class="form-control form-control-lg" placeholder="密碼" value="Admin@2026">
+    </div>
+    <button id="login-btn" class="btn btn-primary btn-block btn-lg" onclick="doLogin()">
+      <i class="fas fa-sign-in-alt"></i> 登入
+    </button>
+  </div>
+</div>
+
+<div class="wrapper" id="main-wrapper" style="display:none">
+
+  <!-- 頂部導航 -->
   <nav class="main-header navbar navbar-expand navbar-white navbar-light">
     <ul class="navbar-nav">
-      <li class="nav-item">
-        <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-      </li>
-      <li class="nav-item d-none d-sm-inline-block">
-        <a href="index.html" class="nav-link">首页</a>
-      </li>
+      <li class="nav-item"><a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a></li>
+      <li class="nav-item d-none d-sm-inline-block"><span class="nav-link text-muted" id="nav-username"></span></li>
     </ul>
-    
     <ul class="navbar-nav ml-auto">
-      <li class="nav-item dropdown">
-        <a class="nav-link" data-toggle="dropdown" href="#">
-          <i class="far fa-bell"></i>
-          <span class="badge badge-warning navbar-badge">3</span>
-        </a>
-        <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-          <span class="dropdown-item dropdown-header">3 条通知</span>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item">
-            <i class="fas fa-user mr-2"></i> 新用户注册
-            <span class="float-right text-muted text-sm">3 分钟前</span>
-          </a>
-          <div class="dropdown-divider"></div>
-          <a href="#" class="dropdown-item dropdown-footer">查看全部</a>
-        </div>
-      </li>
-      <li class="nav-item">
-        <a class="nav-link" href="#">
-          <i class="fas fa-sign-out-alt"></i> 退出
-        </a>
-      </li>
+      <li class="nav-item"><a class="nav-link" href="#" onclick="doLogout()"><i class="fas fa-sign-out-alt"></i> 退出</a></li>
     </ul>
   </nav>
 
-  <!-- 侧边栏 -->
+  <!-- 側邊欄 -->
   <aside class="main-sidebar sidebar-dark-primary elevation-4">
-    <!-- Logo -->
-    <a href="index.html" class="brand-link">
-      <span class="brand-text font-weight-light">🎥 Live-Show 后台</span>
+    <a href="#" class="brand-link" style="background:var(--primary-dark)">
+      <span class="brand-text font-weight-light">🎥 Live-Show 後台</span>
     </a>
-
-    <!-- Sidebar -->
     <div class="sidebar">
-      <!-- 用户信息 -->
-      <div class="user-panel mt-3 pb-3 mb-3 d-flex">
-        <div class="image">
-          <img src="https://via.placeholder.com/160x160/FF6B35/ffffff?text=Admin" class="img-circle elevation-2" alt="User Image">
-        </div>
-        <div class="info">
-          <a href="#" class="d-block">管理员</a>
-        </div>
-      </div>
-
-      <!-- 导航菜单 -->
       <nav class="mt-2">
         <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
-          
           <li class="nav-item">
-            <a href="index.html" class="nav-link active">
-              <i class="nav-icon fas fa-tachometer-alt"></i>
-              <p>数据概览</p>
+            <a href="#" class="nav-link active" onclick="showTab('dashboard')">
+              <i class="nav-icon fas fa-tachometer-alt"></i><p>儀表板</p>
             </a>
           </li>
-
-          <li class="nav-header">内容管理</li>
-          
           <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-video"></i>
-              <p>直播管理</p>
+            <a href="#" class="nav-link" onclick="showTab('users')">
+              <i class="nav-icon fas fa-users"></i><p>用戶管理</p>
             </a>
           </li>
-          
           <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-users"></i>
-              <p>用户管理</p>
+            <a href="#" class="nav-link" onclick="showTab('streams')">
+              <i class="nav-icon fas fa-video"></i><p>直播管理</p>
             </a>
           </li>
-          
           <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-gift"></i>
-              <p>礼物管理</p>
+            <a href="#" class="nav-link" onclick="showTab('gifts')">
+              <i class="nav-icon fas fa-gift"></i><p>禮物管理</p>
             </a>
           </li>
-
-          <li class="nav-header">运营管理</li>
-          
           <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-dollar-sign"></i>
-              <p>财务管理</p>
+            <a href="#" class="nav-link" onclick="showTab('finance')">
+              <i class="nav-icon fas fa-money-bill-wave"></i><p>財務管理</p>
             </a>
           </li>
-          
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-chart-line"></i>
-              <p>数据统计</p>
-            </a>
-          </li>
-          
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-shield-alt"></i>
-              <p>内容审核</p>
-            </a>
-          </li>
-
-          <li class="nav-header">系统设置</li>
-          
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-cog"></i>
-              <p>系统配置</p>
-            </a>
-          </li>
-          
-          <li class="nav-item">
-            <a href="#" class="nav-link">
-              <i class="nav-icon fas fa-user-shield"></i>
-              <p>权限管理</p>
-            </a>
-          </li>
-
         </ul>
       </nav>
     </div>
   </aside>
 
-  <!-- 内容区域 -->
+  <!-- 主內容 -->
   <div class="content-wrapper">
-    <!-- 页面标题 -->
-    <div class="content-header">
-      <div class="container-fluid">
-        <div class="row mb-2">
-          <div class="col-sm-6">
-            <h1 class="m-0">数据概览</h1>
-          </div>
-          <div class="col-sm-6">
-            <ol class="breadcrumb float-sm-right">
-              <li class="breadcrumb-item active">首页</li>
-            </ol>
-          </div>
+
+    <!-- 儀表板 -->
+    <div id="tab-dashboard">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">儀表板</h1>
         </div>
       </div>
-    </div>
-
-    <!-- 主要内容 -->
-    <section class="content">
-      <div class="container-fluid">
-        
-        <!-- 统计卡片 -->
-        <div class="row">
-          <div class="col-lg-3 col-6">
-            <div class="small-box bg-info">
-              <div class="inner">
-                <h3>150</h3>
-                <p>在线主播</p>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="row" id="stats-cards">
+            <div class="col-lg-3 col-6">
+              <div class="small-box bg-info">
+                <div class="inner"><h3 id="stat-users">-</h3><p>總用戶數</p></div>
+                <div class="icon"><i class="fas fa-users"></i></div>
               </div>
-              <div class="icon">
-                <i class="fas fa-broadcast-tower"></i>
+            </div>
+            <div class="col-lg-3 col-6">
+              <div class="small-box bg-success">
+                <div class="inner"><h3 id="stat-streams">-</h3><p>直播總數</p></div>
+                <div class="icon"><i class="fas fa-video"></i></div>
               </div>
-              <a href="#" class="small-box-footer">查看详情 <i class="fas fa-arrow-circle-right"></i></a>
+            </div>
+            <div class="col-lg-3 col-6">
+              <div class="small-box bg-warning">
+                <div class="inner"><h3 id="stat-live">-</h3><p>當前直播中</p></div>
+                <div class="icon"><i class="fas fa-broadcast-tower"></i></div>
+              </div>
+            </div>
+            <div class="col-lg-3 col-6">
+              <div class="small-box bg-danger">
+                <div class="inner"><h3 id="stat-streamers">-</h3><p>主播數</p></div>
+                <div class="icon"><i class="fas fa-star"></i></div>
+              </div>
             </div>
           </div>
-          
-          <div class="col-lg-3 col-6">
-            <div class="small-box bg-success">
-              <div class="inner">
-                <h3>8,420</h3>
-                <p>在线观众</p>
-              </div>
-              <div class="icon">
-                <i class="fas fa-users"></i>
-              </div>
-              <a href="#" class="small-box-footer">查看详情 <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-          
-          <div class="col-lg-3 col-6">
-            <div class="small-box bg-warning">
-              <div class="inner">
-                <h3>¥24,580</h3>
-                <p>今日收益</p>
-              </div>
-              <div class="icon">
-                <i class="fas fa-yen-sign"></i>
-              </div>
-              <a href="#" class="small-box-footer">查看详情 <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-          
-          <div class="col-lg-3 col-6">
-            <div class="small-box bg-danger">
-              <div class="inner">
-                <h3>65</h3>
-                <p>待审核内容</p>
-              </div>
-              <div class="icon">
-                <i class="fas fa-exclamation-triangle"></i>
-              </div>
-              <a href="#" class="small-box-footer">立即处理 <i class="fas fa-arrow-circle-right"></i></a>
-            </div>
-          </div>
-        </div>
-
-        <!-- 图表区域 -->
-        <div class="row">
-          <div class="col-lg-8">
-            <div class="card">
-              <div class="card-header border-0">
-                <h3 class="card-title">实时观看人数</h3>
-              </div>
-              <div class="card-body">
-                <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
-                  <canvas id="viewersChart" style="width:100%;height:200px;"></canvas>
+          <div class="row">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header"><h3 class="card-title">最新直播</h3></div>
+                <div class="card-body p-0">
+                  <table class="table table-striped">
+                    <thead><tr><th>主播</th><th>標題</th><th>觀眾</th><th>狀態</th><th>時間</th></tr></thead>
+                    <tbody id="dashboard-streams"></tbody>
+                  </table>
                 </div>
               </div>
             </div>
           </div>
-          
-          <div class="col-lg-4">
-            <div class="card">
-              <div class="card-header border-0">
-                <h3 class="card-title">热门主播</h3>
-              </div>
-              <div class="card-body p-0">
-                <ul class="products-list product-list-in-card pl-2 pr-2">
-                  <li class="item">
-                    <div class="product-img">
-                      <img src="https://via.placeholder.com/50x50/FF6B35/ffffff?text=U1" alt="主播" class="img-size-50">
-                    </div>
-                    <div class="product-info">
-                      <a href="#" class="product-title">主播小雅
-                        <span class="badge badge-success float-right">2.4k 观众</span>
-                      </a>
-                      <span class="product-description">游戏直播 - 王者荣耀</span>
-                    </div>
-                  </li>
-                  <li class="item">
-                    <div class="product-img">
-                      <img src="https://via.placeholder.com/50x50/6C5CE7/ffffff?text=U2" alt="主播" class="img-size-50">
-                    </div>
-                    <div class="product-info">
-                      <a href="#" class="product-title">主播阿杰
-                        <span class="badge badge-info float-right">1.8k 观众</span>
-                      </a>
-                      <span class="product-description">音乐直播 - 吉他弹唱</span>
-                    </div>
-                  </li>
-                  <li class="item">
-                    <div class="product-img">
-                      <img src="https://via.placeholder.com/50x50/00D4AA/ffffff?text=U3" alt="主播" class="img-size-50">
-                    </div>
-                    <div class="product-info">
-                      <a href="#" class="product-title">主播糖果
-                        <span class="badge badge-warning float-right">1.2k 观众</span>
-                      </a>
-                      <span class="product-description">聊天直播 - 日常分享</span>
-                    </div>
-                  </li>
-                </ul>
-              </div>
-              <div class="card-footer text-center">
-                <a href="#" class="uppercase">查看全部主播</a>
-              </div>
-            </div>
-          </div>
         </div>
+      </section>
+    </div>
 
-        <!-- 最近活动 -->
-        <div class="row">
-          <div class="col-12">
-            <div class="card">
-              <div class="card-header">
-                <h3 class="card-title">最近活动</h3>
-              </div>
-              <div class="card-body table-responsive p-0">
-                <table class="table table-striped table-valign-middle">
-                  <thead>
-                    <tr>
-                      <th>用户</th>
-                      <th>活动</th>
-                      <th>时间</th>
-                      <th>状态</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr>
-                      <td>
-                        <img src="https://via.placeholder.com/128x128/FF6B35/ffffff?text=A" alt="用户" class="img-circle img-size-32 mr-2">
-                        用户 A
-                      </td>
-                      <td>开通 VIP 会员</td>
-                      <td>2 分钟前</td>
-                      <td><span class="badge bg-success">完成</span></td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <img src="https://via.placeholder.com/128x128/6C5CE7/ffffff?text=B" alt="用户" class="img-circle img-size-32 mr-2">
-                        用户 B
-                      </td>
-                      <td>送出火箭礼物 x3</td>
-                      <td>5 分钟前</td>
-                      <td><span class="badge bg-success">完成</span></td>
-                    </tr>
-                    <tr>
-                      <td>
-                        <img src="https://via.placeholder.com/128x128/00D4AA/ffffff?text=C" alt="用户" class="img-circle img-size-32 mr-2">
-                        主播 C
-                      </td>
-                      <td>开始直播</td>
-                      <td>10 分钟前</td>
-                      <td><span class="badge bg-primary">进行中</span></td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
+    <!-- 用戶管理 -->
+    <div id="tab-users" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">用戶管理</h1>
         </div>
-
       </div>
-    </section>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="card">
+            <div class="card-header">
+              <div class="row">
+                <div class="col-6"><h3 class="card-title">用戶列表</h3></div>
+                <div class="col-6 text-right">
+                  <input type="text" id="user-search" class="form-control form-control-sm d-inline-block" style="width:200px" placeholder="搜尋用戶名..." oninput="loadUsers()">
+                </div>
+              </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover">
+                <thead><tr><th>ID</th><th>用戶名</th><th>Email</th><th>餘額</th><th>主播</th><th>管理員</th><th>狀態</th><th>操作</th></tr></thead>
+                <tbody id="users-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 直播管理 -->
+    <div id="tab-streams" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">直播管理</h1>
+        </div>
+      </div>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">直播列表</h3></div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover">
+                <thead><tr><th>ID</th><th>主播</th><th>標題</th><th>觀眾數</th><th>狀態</th><th>開始時間</th><th>操作</th></tr></thead>
+                <tbody id="streams-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 禮物管理 -->
+    <div id="tab-gifts" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">禮物管理</h1>
+        </div>
+      </div>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">禮物列表</h3>
+              <div class="card-tools">
+                <button class="btn btn-primary btn-sm" onclick="showGiftModal()"><i class="fas fa-plus"></i> 新增禮物</button>
+              </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover">
+                <thead><tr><th>圖示</th><th>名稱</th><th>價格（金幣）</th><th>操作</th></tr></thead>
+                <tbody id="gifts-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 財務管理 -->
+    <div id="tab-finance" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">財務管理</h1>
+        </div>
+      </div>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="card">
+            <div class="card-header"><h3 class="card-title">用戶餘額總覽</h3></div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover">
+                <thead><tr><th>用戶名</th><th>餘額（金幣）</th><th>主播</th><th>操作</th></tr></thead>
+                <tbody id="finance-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
   </div>
 
-  <!-- 页脚 -->
+  <!-- 底部 -->
   <footer class="main-footer">
-    <strong>Copyright &copy; 2026 Live-Show.</strong> All rights reserved.
+    <strong>Live-Show 後台管理系統</strong>
+    <div class="float-right d-none d-sm-inline-block">v1.0</div>
   </footer>
-
 </div>
 
-<!-- jQuery (本地) -->
+<!-- 禮物 Modal -->
+<div class="modal fade" id="gift-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">新增禮物</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>圖示（emoji）</label>
+          <input type="text" id="gift-icon" class="form-control" placeholder="🌹">
+        </div>
+        <div class="form-group">
+          <label>名稱</label>
+          <input type="text" id="gift-name" class="form-control" placeholder="玫瑰">
+        </div>
+        <div class="form-group">
+          <label>價格（金幣）</label>
+          <input type="number" id="gift-price" class="form-control" placeholder="10">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="saveGift()">儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="assets/js/jquery.min.js"></script>
-<!-- Bootstrap 4 (本地) -->
 <script src="assets/js/bootstrap.bundle.min.js"></script>
-<!-- AdminLTE App (本地) -->
 <script src="assets/js/adminlte.min.js"></script>
 <script src="assets/js/chart.min.js"></script>
-
 <script>
-  // 页面加载完成后的初始化
-  $(document).ready(function() {
-    console.log('🎥 Live-Show Admin Dashboard loaded');
-  });
-</script>
+const API = '/api';
+let TOKEN = localStorage.getItem('admin_token');
 
+// ======= 登入 =======
+async function doLogin() {
+  const username = document.getElementById('login-username').value;
+  const password = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+
+  try {
+    const res = await fetch(API + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (data.token && data.user?.isAdmin) {
+      TOKEN = data.token;
+      localStorage.setItem('admin_token', TOKEN);
+      document.getElementById('nav-username').textContent = '👤 ' + data.user.username;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-wrapper').style.display = 'block';
+      loadDashboard();
+    } else if (data.token && !data.user?.isAdmin) {
+      err.textContent = '此帳號沒有管理員權限';
+      err.classList.remove('d-none');
+    } else {
+      err.textContent = data.error || '登入失敗';
+      err.classList.remove('d-none');
+    }
+  } catch(e) {
+    err.textContent = '無法連接到伺服器';
+    err.classList.remove('d-none');
+  }
+}
+
+function doLogout() {
+  localStorage.removeItem('admin_token');
+  TOKEN = null;
+  location.reload();
+}
+
+// Enter 鍵登入
+document.getElementById('login-password').addEventListener('keyup', e => { if(e.key==='Enter') doLogin(); });
+
+// ======= 自動登入 =======
+if (TOKEN) {
+  fetch(API + '/auth/verify', { headers: { Authorization: 'Bearer ' + TOKEN } })
+    .then(r => r.json()).then(d => {
+      if (d.success && d.user?.isAdmin) {
+        document.getElementById('nav-username').textContent = '👤 ' + d.user.username;
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-wrapper').style.display = 'block';
+        loadDashboard();
+      } else {
+        localStorage.removeItem('admin_token');
+      }
+    }).catch(() => localStorage.removeItem('admin_token'));
+}
+
+// ======= Tab 切換 =======
+function showTab(name) {
+  ['dashboard','users','streams','gifts','finance'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? 'block' : 'none';
+  });
+  document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  if(name==='dashboard') loadDashboard();
+  if(name==='users') loadUsers();
+  if(name==='streams') loadStreams();
+  if(name==='gifts') loadGifts();
+  if(name==='finance') loadFinance();
+}
+
+// ======= API 請求 =======
+async function api(path, opts={}) {
+  const res = await fetch(API + path, {
+    ...opts,
+    headers: { 'Content-Type':'application/json', Authorization: 'Bearer '+TOKEN, ...opts.headers }
+  });
+  return res.json();
+}
+
+// ======= 儀表板 =======
+async function loadDashboard() {
+  try {
+    const [users, streams] = await Promise.all([
+      api('/admin/users?limit=1'),
+      api('/streams')
+    ]);
+    const streamList = streams.data || [];
+    const liveStreams = streamList.filter(s => s.status === 'live');
+
+    document.getElementById('stat-users').textContent = users.total || users.data?.length || '?';
+    document.getElementById('stat-streams').textContent = streamList.length;
+    document.getElementById('stat-live').textContent = liveStreams.length;
+
+    // 主播數
+    const allUsers = await api('/admin/users?limit=1000');
+    const streamers = (allUsers.data || []).filter(u => u.isStreamer).length;
+    document.getElementById('stat-streamers').textContent = streamers;
+
+    // 最新直播
+    const tbody = document.getElementById('dashboard-streams');
+    tbody.innerHTML = streamList.slice(0,8).map(s => `
+      <tr>
+        <td>${s.streamer?.username || '-'}</td>
+        <td>${s.title}</td>
+        <td>${s.viewers || 0}</td>
+        <td><span class="badge badge-${s.status==='live'?'success':'secondary'}">${s.status==='live'?'直播中':'已結束'}</span></td>
+        <td>${new Date(s.createdAt).toLocaleString('zh-TW')}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    console.error('Dashboard error:', e);
+  }
+}
+
+// ======= 用戶管理 =======
+async function loadUsers() {
+  const search = document.getElementById('user-search')?.value || '';
+  try {
+    const data = await api('/admin/users?limit=100&search=' + encodeURIComponent(search));
+    const users = data.data || [];
+    document.getElementById('users-table').innerHTML = users.map(u => `
+      <tr>
+        <td><small class="text-muted">${u.id.substring(0,8)}...</small></td>
+        <td><strong>${u.username}</strong></td>
+        <td>${u.email || '-'}</td>
+        <td>💰 ${u.balance}</td>
+        <td>${u.isStreamer ? '<span class="badge badge-primary">主播</span>' : '-'}</td>
+        <td>${u.isAdmin ? '<span class="badge badge-danger">管理員</span>' : '-'}</td>
+        <td><span class="badge badge-${u.status==='active'?'success':'danger'}">${u.status||'active'}</span></td>
+        <td>
+          ${!u.isAdmin ? `
+            <button class="btn btn-xs btn-${u.isStreamer?'warning':'info'}" onclick="toggleStreamer('${u.id}',${u.isStreamer})">
+              ${u.isStreamer?'取消主播':'設為主播'}
+            </button>
+            <button class="btn btn-xs btn-${u.status==='active'?'danger':'success'}" onclick="toggleBan('${u.id}','${u.status}')">
+              ${u.status==='active'?'封禁':'解封'}
+            </button>
+          ` : '<span class="text-muted">-</span>'}
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="8" class="text-center text-muted">無用戶資料</td></tr>';
+  } catch(e) {
+    document.getElementById('users-table').innerHTML = '<tr><td colspan="8" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+async function toggleStreamer(userId, isStreamer) {
+  await api('/admin/users/' + userId, {
+    method: 'PUT',
+    body: JSON.stringify({ isStreamer: !isStreamer })
+  });
+  loadUsers();
+}
+
+async function toggleBan(userId, status) {
+  const newStatus = status === 'active' ? 'banned' : 'active';
+  await api('/admin/users/' + userId, {
+    method: 'PUT',
+    body: JSON.stringify({ status: newStatus })
+  });
+  loadUsers();
+}
+
+// ======= 直播管理 =======
+async function loadStreams() {
+  try {
+    const data = await api('/streams');
+    const streams = data.data || [];
+    document.getElementById('streams-table').innerHTML = streams.map(s => `
+      <tr>
+        <td><small class="text-muted">${s.id.substring(0,8)}...</small></td>
+        <td>${s.streamer?.username || '-'}</td>
+        <td>${s.title}</td>
+        <td>👁 ${s.viewers || 0}</td>
+        <td><span class="badge badge-${s.status==='live'?'success':'secondary'}">${s.status==='live'?'直播中':'已結束'}</span></td>
+        <td>${new Date(s.createdAt).toLocaleString('zh-TW')}</td>
+        <td>
+          ${s.status==='live' ? `<button class="btn btn-xs btn-danger" onclick="forceEndStream('${s.id}')">強制結束</button>` : '-'}
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="7" class="text-center text-muted">無直播資料</td></tr>';
+  } catch(e) {
+    document.getElementById('streams-table').innerHTML = '<tr><td colspan="7" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+async function forceEndStream(streamId) {
+  if (!confirm('確定要強制結束此直播？')) return;
+  await api('/streams/' + streamId + '/end', { method: 'POST' });
+  loadStreams();
+}
+
+// ======= 禮物管理 =======
+async function loadGifts() {
+  try {
+    const data = await api('/gifts');
+    const gifts = data.data || data || [];
+    document.getElementById('gifts-table').innerHTML = gifts.map(g => `
+      <tr>
+        <td style="font-size:24px">${g.icon || '🎁'}</td>
+        <td>${g.name}</td>
+        <td>💰 ${g.price}</td>
+        <td>
+          <button class="btn btn-xs btn-danger" onclick="deleteGift('${g.id}')">刪除</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" class="text-center text-muted">尚無禮物，請新增</td></tr>';
+  } catch(e) {
+    document.getElementById('gifts-table').innerHTML = '<tr><td colspan="4" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+function showGiftModal() {
+  $('#gift-modal').modal('show');
+}
+
+async function saveGift() {
+  const icon = document.getElementById('gift-icon').value;
+  const name = document.getElementById('gift-name').value;
+  const price = parseInt(document.getElementById('gift-price').value);
+  if (!name || !price) return alert('請填寫完整');
+
+  await api('/admin/gifts', {
+    method: 'POST',
+    body: JSON.stringify({ icon, name, price })
+  });
+  $('#gift-modal').modal('hide');
+  loadGifts();
+}
+
+async function deleteGift(giftId) {
+  if (!confirm('確定要刪除此禮物？')) return;
+  await api('/admin/gifts/' + giftId, { method: 'DELETE' });
+  loadGifts();
+}
+
+// ======= 財務管理 =======
+async function loadFinance() {
+  try {
+    const data = await api('/admin/users?limit=100');
+    const users = data.data || [];
+    document.getElementById('finance-table').innerHTML = users.map(u => `
+      <tr>
+        <td>${u.username}</td>
+        <td>💰 ${u.balance}</td>
+        <td>${u.isStreamer ? '<span class="badge badge-primary">主播</span>' : '觀眾'}</td>
+        <td>
+          <button class="btn btn-xs btn-success" onclick="addBalance('${u.id}','${u.username}')">增加餘額</button>
+        </td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    document.getElementById('finance-table').innerHTML = '<tr><td colspan="4" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+async function addBalance(userId, username) {
+  const amount = prompt('為 ' + username + ' 增加多少金幣？');
+  if (!amount || isNaN(amount)) return;
+  await api('/admin/users/' + userId + '/balance', {
+    method: 'POST',
+    body: JSON.stringify({ amount: parseInt(amount) })
+  });
+  loadFinance();
+}
+</script>
 </body>
 </html>
-<script>
-// 實時觀看人數折線圖
-window.addEventListener('DOMContentLoaded', function() {
-  var ctx = document.getElementById('viewersChart');
-  if (ctx) {
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: ['12:00','12:10','12:20','12:30','12:40','12:50','13:00'],
-        datasets: [{
-          label: '在線觀眾數',
-          data: [3200, 5800, 7200, 8420, 9100, 7800, 8420],
-          borderColor: '#FF6B35',
-          backgroundColor: 'rgba(255,107,53,0.1)',
-          borderWidth: 2,
-          fill: true,
-          tension: 0.4
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.05)' } }
-        }
-      }
-    });
-  }
-});
-</script>
