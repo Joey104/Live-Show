@@ -257,9 +257,29 @@
           <div class="card">
             <div class="card-header">
               <div class="row">
-                <div class="col-6"><h3 class="card-title">用戶列表</h3></div>
-                <div class="col-6 text-right">
-                  <input type="text" id="user-search" class="form-control form-control-sm d-inline-block" style="width:200px" placeholder="搜尋用戶名..." oninput="loadUsers()">
+                <div class="col-8"><h3 class="card-title">用戶列表</h3></div>
+                <div class="col-4 text-right">
+                  <div class="form-group mb-0">
+                    <label class="d-inline mr-2">角色:</label>
+                    <select id="user-role-filter" class="form-control form-control-sm d-inline-block" style="width:auto" onchange="loadUsersEnhanced()">
+                      <option value="all">全部</option>
+                      <option value="streamer">主播</option>
+                      <option value="admin">管理員</option>
+                      <option value="banned">封禁</option>
+                    </select>
+                    
+                    <label class="d-inline mr-2 ml-3">排序:</label>
+                    <select id="user-sort-by" class="form-control form-control-sm d-inline-block" style="width:auto" onchange="loadUsersEnhanced()">
+                      <option value="createdAt">註冊時間</option>
+                      <option value="balance">餘額</option>
+                      <option value="username">用戶名</option>
+                    </select>
+                    
+                    <select id="user-sort-order" class="form-control form-control-sm d-inline-block" style="width:auto;margin-left:5px" onchange="loadUsersEnhanced()">
+                      <option value="desc">↓ 降序</option>
+                      <option value="asc">↑ 升序</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             </div>
@@ -268,6 +288,9 @@
                 <thead><tr><th>ID</th><th>用戶名</th><th>Email</th><th>餘額</th><th>主播</th><th>管理員</th><th>狀態</th><th>操作</th></tr></thead>
                 <tbody id="users-table"></tbody>
               </table>
+            </div>
+            <div class="card-footer">
+              <div id="users-pagination"></div>
             </div>
           </div>
         </div>
@@ -295,10 +318,23 @@
           <!-- 直播列表 -->
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title"><i class="fas fa-video mr-2"></i>直播列表</h3>
-              <div class="card-tools">
-                <div class="input-group input-group-sm" style="width:200px">
-                  <input type="text" id="stream-search" class="form-control" placeholder="搜尋主播/標題..." oninput="filterStreams()">
+              <div class="row">
+                <div class="col-6">
+                  <h3 class="card-title"><i class="fas fa-video mr-2"></i>直播列表</h3>
+                </div>
+                <div class="col-6 text-right">
+                  <label class="d-inline mr-2">狀態:</label>
+                  <select id="stream-status-filter" class="form-control form-control-sm d-inline-block" style="width:auto" onchange="loadStreamsEnhanced()">
+                    <option value="all">全部</option>
+                    <option value="active">進行中</option>
+                    <option value="ended">已結束</option>
+                  </select>
+                  
+                  <label class="d-inline mr-2 ml-3">排序:</label>
+                  <select id="stream-sort-by" class="form-control form-control-sm d-inline-block" style="width:auto" onchange="loadStreamsEnhanced()">
+                    <option value="viewerCount">觀眾數</option>
+                    <option value="createdAt">開始時間</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -435,6 +471,27 @@
               </table>
             </div>
           </div>
+          
+          <div class="card mt-4">
+            <div class="card-header"><h3 class="card-title">📊 交易記錄</h3></div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover table-sm">
+                <thead><tr><th>用戶</th><th>類型</th><th>金額</th><th>描述</th><th>時間</th></tr></thead>
+                <tbody id="transactions-table"></tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div class="card mt-4">
+            <div class="card-header"><h3 class="card-title">💳 提領申請</h3></div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover table-sm">
+                <thead><tr><th>用戶</th><th>金額</th><th>狀態</th><th>申請時間</th><th>操作</th></tr></thead>
+                <tbody id="withdrawals-table"></tbody>
+              </table>
+            </div>
+          </div>
+          
           <div class="card mt-4">
             <div class="card-header"><h3 class="card-title">禮物銷售統計</h3></div>
             <div class="card-body table-responsive p-0">
@@ -2234,6 +2291,442 @@ async function toggleAdminStatus(userId, username) {
     hideSpinner();
   }
 }
+
+// ======= P0 前端功能增強 =======
+
+// 3.1 全局確認 Modal（替代 confirm()）
+let confirmCallback = null;
+function showConfirm(message, onConfirm) {
+  if (!document.getElementById('confirm-modal')) {
+    const modal = document.createElement('div');
+    modal.id = 'confirm-modal';
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">確認操作</h5>
+            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+          </div>
+          <div class="modal-body" id="confirm-message"></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+            <button type="button" class="btn btn-danger" id="confirm-ok">確認</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+  }
+  
+  confirmCallback = onConfirm;
+  document.getElementById('confirm-message').textContent = message;
+  document.getElementById('confirm-ok').onclick = () => {
+    $('#confirm-modal').modal('hide');
+    if (confirmCallback) confirmCallback();
+  };
+  $('#confirm-modal').modal('show');
+}
+
+// 3.2 用戶管理篩選/排序/分頁
+let userCurrentPage = 1;
+const userPageSize = 20;
+let userTotalPages = 1;
+
+async function loadUsersEnhanced() {
+  const role = document.getElementById('user-role-filter')?.value || 'all';
+  const sortBy = document.getElementById('user-sort-by')?.value || 'createdAt';
+  const order = document.getElementById('user-sort-order')?.value || 'desc';
+  const page = userCurrentPage;
+  const offset = (page - 1) * userPageSize;
+  
+  showSpinner('載入用戶中...');
+  try {
+    const data = await api(`/admin/users-enhanced?role=${role}&sortBy=${sortBy}&order=${order}&limit=${userPageSize}&offset=${offset}`);
+    const users = data.data || [];
+    userTotalPages = Math.ceil((data.total || 0) / userPageSize);
+    
+    const tbody = document.getElementById('users-table');
+    tbody.innerHTML = users.map(u => `
+      <tr>
+        <td><small>${u.id.slice(0,6)}</small></td>
+        <td><span class="badge badge-primary">${u.avatar || '👤'}</span> <strong>${u.username}</strong></td>
+        <td><small>${u.email}</small></td>
+        <td><strong>${u.balance}</strong></td>
+        <td><span class="badge ${u.isStreamer ? 'badge-success' : 'badge-secondary'}">主播</span></td>
+        <td><span class="badge ${u.isAdmin ? 'badge-danger' : 'badge-light'}">管理員</span></td>
+        <td><span class="badge badge-${u.status === 'active' ? 'success' : 'danger'}">${u.status}</span></td>
+        <td>
+          <button class="btn btn-xs btn-info" onclick="showUserDetail('${u.id}')"><i class="fas fa-eye"></i> 詳情</button>
+        </td>
+      </tr>
+    `).join('');
+    
+    // 分頁
+    renderPagination('users-pagination', data.total || 0, page, userPageSize, (p) => {
+      userCurrentPage = p;
+      loadUsersEnhanced();
+    });
+  } catch(e) {
+    showToast('載入失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+function renderPagination(containerId, total, currentPage, pageSize, onPageChange) {
+  const totalPages = Math.ceil(total / pageSize);
+  let html = '<div class="pagination-container"><div class="pagination-info">第 ' + currentPage + ' / ' + totalPages + ' 頁（共 ' + total + ' 筆）</div>';
+  
+  if (currentPage > 1) {
+    html += '<button class="pagination-btn" onclick="arguments[0].onPageChange(' + (currentPage - 1) + ')">← 上一頁</button>';
+  }
+  
+  for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+    html += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="arguments[0].onPageChange(${i})">${i}</button>`;
+  }
+  
+  if (currentPage < totalPages) {
+    html += '<button class="pagination-btn" onclick="arguments[0].onPageChange(' + (currentPage + 1) + ')">下一頁 →</button>';
+  }
+  html += '</div>';
+  
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.innerHTML = html;
+    container.onPageChange = onPageChange;
+  }
+}
+
+// 3.3 用戶詳情增強
+async function showUserDetail(userId) {
+  showSpinner('載入用戶詳情...');
+  try {
+    const [userRes, streamsRes, giftsRes] = await Promise.all([
+      api(`/admin/users/${userId}`),
+      api(`/admin/users/${userId}/streams`),
+      api(`/admin/users/${userId}/gifts`)
+    ]);
+    
+    const user = userRes.data || {};
+    const streams = streamsRes.data || [];
+    const gifts = giftsRes.data || [];
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header bg-primary text-white">
+            <h5 class="modal-title">用戶詳情: ${user.username} ${user.avatar || '👤'}</h5>
+            <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
+          </div>
+          <div class="modal-body">
+            <ul class="nav nav-tabs" role="tablist">
+              <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#user-info">基本資訊</a></li>
+              <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#user-streams">直播歷史</a></li>
+              <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#user-gifts">送禮記錄</a></li>
+            </ul>
+            <div class="tab-content mt-3">
+              <div id="user-info" class="tab-pane fade show active">
+                <table class="table table-sm">
+                  <tr><td>ID</td><td>${user.id}</td></tr>
+                  <tr><td>用戶名</td><td>${user.username}</td></tr>
+                  <tr><td>Email</td><td>${user.email}</td></tr>
+                  <tr><td>餘額</td><td><strong>${user.balance}</strong> 金幣</td></tr>
+                  <tr><td>主播</td><td>${user.isStreamer ? '<span class="badge badge-success">是</span>' : '<span class="badge badge-secondary">否</span>'}</td></tr>
+                  <tr><td>管理員</td><td>${user.isAdmin ? '<span class="badge badge-danger">是</span>' : '<span class="badge badge-secondary">否</span>'}</td></tr>
+                  <tr><td>狀態</td><td><span class="badge badge-${user.status === 'active' ? 'success' : 'danger'}">${user.status}</span></td></tr>
+                  <tr><td>註冊時間</td><td>${new Date(user.createdAt).toLocaleString('zh-TW')}</td></tr>
+                </table>
+                <div class="form-group">
+                  <label>設定餘額</label>
+                  <div class="input-group">
+                    <input type="number" id="set-balance-input" class="form-control" value="${user.balance}" placeholder="輸入新餘額">
+                    <div class="input-group-append">
+                      <button class="btn btn-primary" onclick="setUserBalance('${user.id}', this)">確認</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="user-streams" class="tab-pane fade">
+                ${streams.length > 0 ? `
+                  <table class="table table-sm">
+                    <thead><tr><th>標題</th><th>觀眾</th><th>時間</th></tr></thead>
+                    <tbody>${streams.map(s => `
+                      <tr><td>${s.title}</td><td>${s.viewerCount}</td><td>${new Date(s.createdAt).toLocaleString('zh-TW')}</td></tr>
+                    `).join('')}</tbody>
+                  </table>
+                ` : '<p class="text-muted">暫無直播記錄</p>'}
+              </div>
+              <div id="user-gifts" class="tab-pane fade">
+                ${gifts.length > 0 ? `
+                  <table class="table table-sm">
+                    <thead><tr><th>禮物</th><th>數量</th><th>金額</th><th>直播間</th><th>時間</th></tr></thead>
+                    <tbody>${gifts.map(g => `
+                      <tr><td>${g.giftIcon} ${g.giftName}</td><td>${g.quantity}</td><td>${g.totalCost}</td><td>${g.streamTitle}</td><td>${new Date(g.createdAt).toLocaleString('zh-TW')}</td></tr>
+                    `).join('')}</tbody>
+                  </table>
+                ` : '<p class="text-muted">暫無送禮記錄</p>'}
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    $(modal).modal('show');
+    $(modal).on('hidden.bs.modal', () => modal.remove());
+  } catch(e) {
+    showToast('載入失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+async function setUserBalance(userId, btn) {
+  const input = document.getElementById('set-balance-input');
+  const balance = parseInt(input.value);
+  if (balance < 0) {
+    showToast('餘額不能為負數', 'warning');
+    return;
+  }
+  
+  showSpinner('更新中...');
+  try {
+    const result = await api(`/admin/users/${userId}/set-balance`, {
+      method: 'POST',
+      body: JSON.stringify({ balance })
+    });
+    showToast(result.message || '已設定餘額', 'success');
+  } catch(e) {
+    showToast('失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+// 3.4 直播管理篩選
+async function loadStreamsEnhanced() {
+  const status = document.getElementById('stream-status-filter')?.value || 'all';
+  const sortBy = document.getElementById('stream-sort-by')?.value || 'viewerCount';
+  
+  showSpinner('載入直播中...');
+  try {
+    let data = await api('/admin/streams');
+    let streams = data.data || [];
+    
+    // 前端篩選
+    if (status !== 'all') {
+      streams = streams.filter(s => {
+        if (status === 'active') return !s.endedAt;
+        if (status === 'ended') return s.endedAt;
+        return true;
+      });
+    }
+    
+    // 前端排序
+    if (sortBy === 'viewerCount') {
+      streams.sort((a, b) => (b.viewerCount || 0) - (a.viewerCount || 0));
+    } else if (sortBy === 'createdAt') {
+      streams.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    
+    const tbody = document.getElementById('streams-table');
+    tbody.innerHTML = (streams.slice(0, 20) || []).map(s => `
+      <tr onclick="showStreamDetail('${s.id}')">
+        <td><strong>${s.streamer?.username || '未知'}</strong></td>
+        <td>${s.title}</td>
+        <td><strong>${s.viewerCount}</strong></td>
+        <td><span class="badge ${s.endedAt ? 'badge-secondary' : 'badge-success'}">
+          ${s.endedAt ? '已結束' : '進行中'}
+        </span></td>
+        <td><small>${new Date(s.createdAt).toLocaleString('zh-TW')}</small></td>
+        <td><button class="btn btn-xs btn-info"><i class="fas fa-info-circle"></i></button></td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    showToast('載入失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+// 3.5 財務管理增強
+async function loadFinanceEnhanced() {
+  showSpinner('載入交易記錄...');
+  try {
+    // 交易記錄
+    const txns = await api('/admin/transactions?limit=20&offset=0');
+    const transactionTbody = document.getElementById('transactions-table');
+    if (transactionTbody) {
+      transactionTbody.innerHTML = (txns.data || []).map(t => `
+        <tr>
+          <td>${t.username}</td>
+          <td><span class="badge badge-primary">${t.type}</span></td>
+          <td>${t.amount}</td>
+          <td><small>${t.description}</small></td>
+          <td>${new Date(t.createdAt).toLocaleString('zh-TW')}</td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" class="text-center text-muted">暫無交易記錄</td></tr>';
+    }
+    
+    // 提領申請
+    const withdrawals = await api('/admin/withdrawals');
+    const withdrawalTbody = document.getElementById('withdrawals-table');
+    if (withdrawalTbody) {
+      withdrawalTbody.innerHTML = (withdrawals.data || []).map(w => `
+        <tr>
+          <td>${w.username}</td>
+          <td>${w.amount}</td>
+          <td><span class="badge ${w.status === 'pending' ? 'badge-warning' : w.status === 'approved' ? 'badge-success' : 'badge-danger'}">${w.status}</span></td>
+          <td><small>${new Date(w.requestedAt).toLocaleString('zh-TW')}</small></td>
+          <td>
+            ${w.status === 'pending' ? `
+              <button class="btn btn-xs btn-success" onclick="approveWithdrawal('${w.id}')"><i class="fas fa-check"></i> 批准</button>
+              <button class="btn btn-xs btn-danger" onclick="rejectWithdrawal('${w.id}')"><i class="fas fa-times"></i> 拒絕</button>
+            ` : `<span class="text-muted">已${w.status === 'approved' ? '批准' : '拒絕'}</span>`}
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" class="text-center text-muted">暫無提領申請</td></tr>';
+    }
+  } catch(e) {
+    showToast('載入失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+async function approveWithdrawal(withdrawalId) {
+  showConfirm('確認批准此提領申請？', async () => {
+    try {
+      const result = await api(`/admin/withdrawals/${withdrawalId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'approved', note: '管理員批准' })
+      });
+      showToast('已批准', 'success');
+      loadFinanceEnhanced();
+    } catch(e) {
+      showToast('失敗: ' + e.message, 'error');
+    }
+  });
+}
+
+async function rejectWithdrawal(withdrawalId) {
+  showConfirm('確認拒絕此提領申請？', async () => {
+    try {
+      const result = await api(`/admin/withdrawals/${withdrawalId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ status: 'rejected', note: '管理員拒絕' })
+      });
+      showToast('已拒絕', 'success');
+      loadFinanceEnhanced();
+    } catch(e) {
+      showToast('失敗: ' + e.message, 'error');
+    }
+  });
+}
+
+// 3.6 儀表板即時刷新 - 10秒自動更新 + 每日統計
+let dashboardRefreshTimer = null;
+async function loadDashboardEnhanced() {
+  try {
+    // 每日統計
+    const dailyStats = await api('/admin/stats/daily');
+    const stats = dailyStats.data || [];
+    
+    if (stats.length > 0) {
+      const today = stats[stats.length - 1];
+      // 更新統計卡
+      if (!document.getElementById('stat-new-users-card')) {
+        const newCard = document.createElement('div');
+        newCard.className = 'col-lg-3 col-6';
+        newCard.innerHTML = `
+          <div class="small-box bg-success">
+            <div class="inner"><h3 id="stat-new-users">${today.newUsers || 0}</h3><p>今日新增用戶</p></div>
+            <div class="icon"><i class="fas fa-user-plus"></i></div>
+          </div>
+        `;
+        newCard.id = 'stat-new-users-card';
+        document.getElementById('stats-cards')?.appendChild(newCard);
+      }
+      
+      if (!document.getElementById('stat-today-revenue-card')) {
+        const revenueCard = document.createElement('div');
+        revenueCard.className = 'col-lg-3 col-6';
+        revenueCard.innerHTML = `
+          <div class="small-box bg-warning">
+            <div class="inner"><h3 id="stat-today-revenue">${today.revenue || 0}</h3><p>今日收入</p></div>
+            <div class="icon"><i class="fas fa-coins"></i></div>
+          </div>
+        `;
+        revenueCard.id = 'stat-today-revenue-card';
+        document.getElementById('stats-cards')?.appendChild(revenueCard);
+      }
+      
+      // 7日圖表數據
+      if (window.dailyChart) {
+        window.dailyChart.data.labels = stats.map(s => s.date);
+        window.dailyChart.data.datasets = [
+          {
+            label: '新增用戶',
+            data: stats.map(s => s.newUsers),
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)'
+          }
+        ];
+        window.dailyChart.update();
+      }
+    }
+  } catch(e) {
+    console.error('Dashboard enhancement error:', e);
+  }
+}
+
+// 定時刷新
+if (dashboardRefreshTimer) clearInterval(dashboardRefreshTimer);
+dashboardRefreshTimer = setInterval(() => {
+  if (document.getElementById('tab-dashboard')?.style.display !== 'none') {
+    loadDashboardEnhanced();
+  }
+}, 10000);
+
+// 側邊欄徽章 - 3.6
+async function updateSidebarBadges() {
+  try {
+    // 這裡需要調用 API 取得未處理的舉報和待審核的主播申請
+    // 暫時略過，後續實現
+  } catch(e) {
+    console.error('Update badges error:', e);
+  }
+}
+
+// 初始化 P0 功能
+document.addEventListener('DOMContentLoaded', () => {
+  // 確保 loadDashboard 改用增強版本
+  const originalLoadDashboard = window.loadDashboard;
+  window.loadDashboard = async () => {
+    await originalLoadDashboard?.();
+    await loadDashboardEnhanced();
+  };
+  
+  // 確保 loadUsers 改用增強版本
+  const originalLoadUsers = window.loadUsers;
+  window.loadUsers = async () => {
+    await originalLoadUsers?.();
+    await loadUsersEnhanced();
+  };
+  
+  // 確保 loadFinance 改用增強版本
+  const originalLoadFinance = window.loadFinance;
+  window.loadFinance = async () => {
+    await originalLoadFinance?.();
+    await loadFinanceEnhanced();
+  };
+});
 </script>
 </body>
 </html>

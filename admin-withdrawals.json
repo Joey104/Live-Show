@@ -1,0 +1,31 @@
+[
+  {
+    "id": "1",
+    "userId": "user1",
+    "username": "主播A",
+    "amount": 1000,
+    "status": "pending",
+    "requestedAt": "2026-03-20T10:35:52.194Z",
+    "note": ""
+  },
+  {
+    "id": "2",
+    "userId": "user2",
+    "username": "主播B",
+    "amount": 2000,
+    "status": "approved",
+    "requestedAt": "2026-03-21T10:35:52.194Z",
+    "approvedAt": "2026-03-21T22:35:52.194Z",
+    "note": "已轉帳"
+  },
+  {
+    "id": "3",
+    "userId": "user3",
+    "username": "主播C",
+    "amount": 500,
+    "status": "rejected",
+    "requestedAt": "2026-03-19T10:35:52.194Z",
+    "rejectedAt": "2026-03-20T10:35:52.194Z",
+    "note": "帳戶異常"
+  }
+]
