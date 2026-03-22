@@ -122,6 +122,16 @@
               <i class="nav-icon fas fa-money-bill-wave"></i><p>財務管理</p>
             </a>
           </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" onclick="showTab('revenue')">
+              <i class="nav-icon fas fa-chart-line"></i><p>收益分析</p>
+            </a>
+          </li>
+          <li class="nav-item">
+            <a href="#" class="nav-link" onclick="showTab('settings')">
+              <i class="nav-icon fas fa-cog"></i><p>系統設定</p>
+            </a>
+          </li>
         </ul>
       </nav>
     </div>
@@ -390,6 +400,89 @@
       </section>
     </div>
 
+    <!-- 收益分析 -->
+    <div id="tab-revenue" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">收益分析</h1>
+        </div>
+      </div>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="row mb-4">
+            <div class="col-lg-3 col-6">
+              <div class="small-box bg-info">
+                <div class="inner"><h3 id="revenue-total">-</h3><p>平台總收益</p></div>
+                <div class="icon"><i class="fas fa-wallet"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header"><h3 class="card-title">Top 10 主播</h3></div>
+                <div class="card-body table-responsive p-0">
+                  <table class="table table-hover table-sm">
+                    <thead><tr><th>主播名稱</th><th>收益</th><th>禮物數</th></tr></thead>
+                    <tbody id="revenue-streamers"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header"><h3 class="card-title">禮物銷售排行</h3></div>
+                <div class="card-body table-responsive p-0">
+                  <table class="table table-hover table-sm">
+                    <thead><tr><th>禮物</th><th>銷售金額</th><th>銷售數量</th></tr></thead>
+                    <tbody id="revenue-gifts"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 系統設定 -->
+    <div id="tab-settings" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">系統設定</h1>
+        </div>
+      </div>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">平台公告</h3>
+              <div class="card-tools">
+                <button class="btn btn-primary btn-sm" onclick="showAnnouncementModal()"><i class="fas fa-plus"></i> 新增公告</button>
+              </div>
+            </div>
+            <div class="card-body">
+              <div id="announcements-list"></div>
+            </div>
+          </div>
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3 class="card-title">敏感詞管理</h3>
+              <div class="card-tools">
+                <button class="btn btn-primary btn-sm" onclick="showSensitiveWordModal()"><i class="fas fa-plus"></i> 新增敏感詞</button>
+              </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover">
+                <thead><tr><th>詞語</th><th>等級</th><th>操作</th></tr></thead>
+                <tbody id="sensitive-words-table"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
   </div>
 
   <!-- 底部 -->
@@ -399,15 +492,35 @@
   </footer>
 </div>
 
+<!-- 用戶詳情 Modal -->
+<div class="modal fade" id="user-detail-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">用戶詳情</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div id="user-detail-content"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger" id="reset-password-btn" onclick="resetUserPassword()">重置密碼</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- 禮物 Modal -->
 <div class="modal fade" id="gift-modal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">新增禮物</h5>
+        <h5 class="modal-title" id="gift-modal-title">新增禮物</h5>
         <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
       </div>
       <div class="modal-body">
+        <input type="hidden" id="gift-id">
         <div class="form-group">
           <label>圖示（emoji）</label>
           <input type="text" id="gift-icon" class="form-control" placeholder="🌹">
@@ -424,6 +537,62 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
         <button type="button" class="btn btn-primary" onclick="saveGift()">儲存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 公告 Modal -->
+<div class="modal fade" id="announcement-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">新增公告</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>標題</label>
+          <input type="text" id="announcement-title" class="form-control" placeholder="公告標題">
+        </div>
+        <div class="form-group">
+          <label>內容</label>
+          <textarea id="announcement-content" class="form-control" rows="4" placeholder="公告內容"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="saveAnnouncement()">發布</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 敏感詞 Modal -->
+<div class="modal fade" id="sensitive-word-modal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">新增敏感詞</h5>
+        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>詞語</label>
+          <input type="text" id="sensitive-word-input" class="form-control" placeholder="敏感詞">
+        </div>
+        <div class="form-group">
+          <label>等級</label>
+          <select id="sensitive-word-level" class="form-control">
+            <option value="low">低</option>
+            <option value="medium" selected>中</option>
+            <option value="high">高</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+        <button type="button" class="btn btn-primary" onclick="saveSensitiveWord()">新增</button>
       </div>
     </div>
   </div>
@@ -496,7 +665,7 @@ if (TOKEN) {
 
 // ======= Tab 切換 =======
 function showTab(name) {
-  ['dashboard','users','streams','gifts','finance'].forEach(t => {
+  ['dashboard','users','streams','gifts','finance','revenue','settings'].forEach(t => {
     document.getElementById('tab-'+t).style.display = t===name ? 'block' : 'none';
   });
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -506,13 +675,13 @@ function showTab(name) {
   if(name==='users') loadUsers();
   if(name==='gifts') loadGifts();
   if(name==='finance') loadFinance();
+  if(name==='revenue') loadRevenueStats();
+  if(name==='settings') loadSettings();
   if(name==='streams') {
     loadStreams();
-    // 啟動 30 秒自動刷新
     if(streamRefreshTimer) clearInterval(streamRefreshTimer);
     streamRefreshTimer = setInterval(loadStreams, 30000);
   } else {
-    // 離開直播管理時停止刷新
     if(streamRefreshTimer) { clearInterval(streamRefreshTimer); streamRefreshTimer = null; }
   }
 }
@@ -577,6 +746,7 @@ async function loadUsers() {
         <td>${u.isAdmin ? '<span class="badge badge-danger">管理員</span>' : '-'}</td>
         <td><span class="badge badge-${u.status==='active'?'success':'danger'}">${u.status||'active'}</span></td>
         <td>
+          <button class="btn btn-xs btn-info mr-1" onclick="showUserDetail('${u.id}')">詳情</button>
           ${!u.isAdmin ? `
             <button class="btn btn-xs btn-${u.isStreamer?'warning':'info'}" onclick="toggleStreamer('${u.id}',${u.isStreamer})">
               ${u.isStreamer?'取消主播':'設為主播'}
@@ -590,6 +760,44 @@ async function loadUsers() {
     `).join('') || '<tr><td colspan="8" class="text-center text-muted">無用戶資料</td></tr>';
   } catch(e) {
     document.getElementById('users-table').innerHTML = '<tr><td colspan="8" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+async function showUserDetail(userId) {
+  try {
+    const data = await api('/admin/users?limit=1000');
+    const user = (data.data || []).find(u => u.id === userId);
+    if (!user) return alert('用戶不存在');
+
+    const content = `
+      <table class="table table-sm table-borderless">
+        <tr><td class="text-muted">用戶ID</td><td>${user.id}</td></tr>
+        <tr><td class="text-muted">用戶名</td><td><strong>${user.username}</strong></td></tr>
+        <tr><td class="text-muted">Email</td><td>${user.email || '-'}</td></tr>
+        <tr><td class="text-muted">餘額</td><td>💰 ${user.balance}</td></tr>
+        <tr><td class="text-muted">身份</td><td>${user.isAdmin ? '管理員' : (user.isStreamer ? '主播' : '觀眾')}</td></tr>
+        <tr><td class="text-muted">狀態</td><td><span class="badge badge-${user.status==='active'?'success':'danger'}">${user.status}</span></td></tr>
+        <tr><td class="text-muted">創建時間</td><td>${new Date(user.createdAt).toLocaleString('zh-TW')}</td></tr>
+      </table>
+    `;
+    document.getElementById('user-detail-content').innerHTML = content;
+    document.getElementById('reset-password-btn').setAttribute('data-user-id', userId);
+    $('#user-detail-modal').modal('show');
+  } catch(e) {
+    alert('載入失敗：' + e.message);
+  }
+}
+
+async function resetUserPassword() {
+  const userId = document.getElementById('reset-password-btn').getAttribute('data-user-id');
+  if (!confirm('確定要重置此用戶密碼？')) return;
+
+  try {
+    const result = await api('/admin/users/' + userId + '/reset-password', { method: 'POST' });
+    alert('新密碼：' + result.data.newPassword + '\n\n請告知用戶！');
+    $('#user-detail-modal').modal('hide');
+  } catch(e) {
+    alert('重置失敗：' + e.message);
   }
 }
 
@@ -767,7 +975,7 @@ async function forceEndStream(streamId) {
 // ======= 禮物管理 =======
 async function loadGifts() {
   try {
-    const data = await api('/gifts');
+    const data = await api('/admin/gifts');
     const gifts = data.data || data || [];
     document.getElementById('gifts-table').innerHTML = gifts.map(g => `
       <tr>
@@ -775,6 +983,7 @@ async function loadGifts() {
         <td>${g.name}</td>
         <td>💰 ${g.price}</td>
         <td>
+          <button class="btn btn-xs btn-info mr-1" onclick="editGift('${g.id}','${g.icon}','${g.name}',${g.price})">編輯</button>
           <button class="btn btn-xs btn-danger" onclick="deleteGift('${g.id}')">刪除</button>
         </td>
       </tr>
@@ -785,19 +994,41 @@ async function loadGifts() {
 }
 
 function showGiftModal() {
+  document.getElementById('gift-id').value = '';
+  document.getElementById('gift-modal-title').textContent = '新增禮物';
+  document.getElementById('gift-icon').value = '🎁';
+  document.getElementById('gift-name').value = '';
+  document.getElementById('gift-price').value = '';
+  $('#gift-modal').modal('show');
+}
+
+function editGift(giftId, icon, name, price) {
+  document.getElementById('gift-id').value = giftId;
+  document.getElementById('gift-modal-title').textContent = '編輯禮物';
+  document.getElementById('gift-icon').value = icon;
+  document.getElementById('gift-name').value = name;
+  document.getElementById('gift-price').value = price;
   $('#gift-modal').modal('show');
 }
 
 async function saveGift() {
+  const giftId = document.getElementById('gift-id').value;
   const icon = document.getElementById('gift-icon').value;
   const name = document.getElementById('gift-name').value;
   const price = parseInt(document.getElementById('gift-price').value);
   if (!name || !price) return alert('請填寫完整');
 
-  await api('/admin/gifts', {
-    method: 'POST',
-    body: JSON.stringify({ icon, name, price })
-  });
+  if (giftId) {
+    await api('/admin/gifts/' + giftId, {
+      method: 'PUT',
+      body: JSON.stringify({ icon, name, price })
+    });
+  } else {
+    await api('/admin/gifts', {
+      method: 'POST',
+      body: JSON.stringify({ icon, name, price })
+    });
+  }
   $('#gift-modal').modal('hide');
   loadGifts();
 }
@@ -836,6 +1067,83 @@ async function addBalance(userId, username) {
     body: JSON.stringify({ amount: parseInt(amount) })
   });
   loadFinance();
+}
+
+// ======= 收益分析 =======
+async function loadRevenueStats() {
+  try {
+    const data = await api('/admin/revenue/stats');
+    const stats = data.data || {};
+    document.getElementById('revenue-total').textContent = '💰 ' + (stats.totalRevenue || 0);
+    document.getElementById('revenue-streamers').innerHTML = (stats.topStreamers || []).map(s => `
+      <tr><td><strong>${s.username}</strong></td><td>💰 ${s.totalRevenue}</td><td>${s.giftCount}</td></tr>
+    `).join('') || '<tr><td colspan="3" class="text-center text-muted">暫無數據</td></tr>';
+    document.getElementById('revenue-gifts').innerHTML = (stats.giftSales || []).map(g => `
+      <tr><td>${g.giftIcon} ${g.giftName}</td><td>💰 ${g.totalRevenue}</td><td>${g.quantity}</td></tr>
+    `).join('') || '<tr><td colspan="3" class="text-center text-muted">暫無數據</td></tr>';
+  } catch(e) {
+    console.error('Revenue stats error:', e);
+  }
+}
+
+// ======= 系統設定 =======
+async function loadSettings() { loadAnnouncements(); loadSensitiveWords(); }
+async function loadAnnouncements() {
+  try {
+    const data = await api('/admin/announcements');
+    const announcements = data.data || [];
+    document.getElementById('announcements-list').innerHTML = announcements.map(a => `
+      <div class="card card-outline card-info mb-3"><div class="card-header"><h5 class="card-title">${a.title}</h5></div>
+      <div class="card-body"><p>${a.content}</p><small class="text-muted">發布者：${a.createdBy} | ${new Date(a.createdAt).toLocaleString('zh-TW')}</small></div>
+      <div class="card-footer text-right"><button class="btn btn-xs btn-danger" onclick="deleteAnnouncement('${a.id}')">刪除</button></div></div>
+    `).join('') || '<p class="text-muted">暫無公告</p>';
+  } catch(e) { }
+}
+async function loadSensitiveWords() {
+  try {
+    const data = await api('/admin/sensitive-words');
+    const words = data.data || [];
+    document.getElementById('sensitive-words-table').innerHTML = words.map(w => `
+      <tr><td>${w.word}</td><td><span class="badge badge-${w.level==='high'?'danger':'warning'}">${w.level}</span></td>
+      <td><button class="btn btn-xs btn-danger" onclick="deleteSensitiveWord('${w.id}')">刪除</button></td></tr>
+    `).join('') || '<tr><td colspan="3" class="text-center text-muted">暫無敏感詞</td></tr>';
+  } catch(e) { }
+}
+function showAnnouncementModal() {
+  document.getElementById('announcement-title').value = '';
+  document.getElementById('announcement-content').value = '';
+  $('#announcement-modal').modal('show');
+}
+async function saveAnnouncement() {
+  const title = document.getElementById('announcement-title').value;
+  const content = document.getElementById('announcement-content').value;
+  if (!title || !content) return alert('請填寫完整');
+  await api('/admin/announcements', { method: 'POST', body: JSON.stringify({ title, content }) });
+  $('#announcement-modal').modal('hide');
+  loadAnnouncements();
+}
+async function deleteAnnouncement(announcementId) {
+  if (!confirm('確定要刪除此公告？')) return;
+  await api('/admin/announcements/' + announcementId, { method: 'DELETE' });
+  loadAnnouncements();
+}
+function showSensitiveWordModal() {
+  document.getElementById('sensitive-word-input').value = '';
+  document.getElementById('sensitive-word-level').value = 'medium';
+  $('#sensitive-word-modal').modal('show');
+}
+async function saveSensitiveWord() {
+  const word = document.getElementById('sensitive-word-input').value;
+  const level = document.getElementById('sensitive-word-level').value;
+  if (!word) return alert('請輸入詞語');
+  await api('/admin/sensitive-words', { method: 'POST', body: JSON.stringify({ word, level }) });
+  $('#sensitive-word-modal').modal('hide');
+  loadSensitiveWords();
+}
+async function deleteSensitiveWord(wordId) {
+  if (!confirm('確定要刪除此敏感詞？')) return;
+  await api('/admin/sensitive-words/' + wordId, { method: 'DELETE' });
+  loadSensitiveWords();
 }
 
 // ======= Spinner 載入狀態 (7.5) =======
