@@ -17,6 +17,29 @@
     .brand-link { background-color: var(--primary-dark) !important; }
     #login-screen { position:fixed;inset:0;background:#1a1a2e;display:flex;align-items:center;justify-content:center;z-index:9999; }
     .login-box { background:#fff;padding:40px;border-radius:12px;width:360px;box-shadow:0 20px 40px rgba(0,0,0,0.3); }
+    /* ===== Spinner 載入狀態 ===== */
+    #global-spinner { position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;align-items:center;justify-content:center;z-index:9998; }
+    .spinner-container { background:#fff;padding:30px 50px;border-radius:12px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+    .spinner-border { width:3rem;height:3rem;color:var(--primary); }
+    /* ===== Toast 通知 ===== */
+    #toast-container { position:fixed;top:20px;right:20px;z-index:9997;max-width:350px; }
+    .toast { background:#fff;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.2);margin-bottom:10px;animation:slideIn 0.3s ease;overflow:hidden; }
+    .toast.success { border-left:4px solid #28a745; }
+    .toast.error { border-left:4px solid #dc3545; }
+    .toast.warning { border-left:4px solid #ffc107; }
+    .toast-header { padding:12px 15px;border-bottom:1px solid #eee;display:flex;align-items:center;justify-content:space-between; }
+    .toast-body { padding:12px 15px;color:#666; }
+    .toast-close { background:none;border:none;font-size:20px;color:#999;cursor:pointer; }
+    @keyframes slideIn { from { transform:translateX(100%);opacity:0; } to { transform:translateX(0);opacity:1; } }
+    @keyframes slideOut { from { transform:translateX(0);opacity:1; } to { transform:translateX(100%);opacity:0; } }
+    .toast.hiding { animation:slideOut 0.3s ease forwards; }
+    /* ===== 分頁 ===== */
+    .pagination-container { display:flex;justify-content:center;align-items:center;gap:10px;margin-top:20px; }
+    .pagination-btn { padding:6px 12px;border:1px solid #ddd;background:#fff;border-radius:4px;cursor:pointer;transition:all 0.2s; }
+    .pagination-btn:hover:not(:disabled) { background:var(--primary);color:#fff;border-color:var(--primary); }
+    .pagination-btn:disabled { opacity:0.5;cursor:not-allowed; }
+    .pagination-btn.active { background:var(--primary);color:#fff;border-color:var(--primary); }
+    .pagination-info { color:#666;font-size:14px; }
   </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -41,6 +64,17 @@
     </button>
   </div>
 </div>
+
+<!-- 全局 Spinner -->
+<div id="global-spinner">
+  <div class="spinner-container">
+    <div class="spinner-border" role="status"></div>
+    <div class="mt-3 text-muted">載入中...</div>
+  </div>
+</div>
+
+<!-- Toast 通知容器 -->
+<div id="toast-container"></div>
 
 <div class="wrapper" id="main-wrapper" style="display:none">
 
@@ -128,6 +162,44 @@
               <div class="small-box bg-danger">
                 <div class="inner"><h3 id="stat-streamers">-</h3><p>主播數</p></div>
                 <div class="icon"><i class="fas fa-star"></i></div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-12">
+              <div class="card">
+                <div class="card-header">
+                  <h3 class="card-title">📊 觀眾趨勢（最近 7 天）</h3>
+                  <div class="card-tools">
+                    <button class="btn btn-sm btn-outline-primary" onclick="refreshViewerChart()">
+                      <i class="fas fa-sync-alt"></i> 刷新
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <canvas id="viewerChart" height="100"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header"><h3 class="card-title">🔥 熱門直播排行（Top 10）</h3></div>
+                <div class="card-body p-0">
+                  <table class="table table-striped">
+                    <thead><tr><th>排名</th><th>主播</th><th>標題</th><th>觀眾</th></tr></thead>
+                    <tbody id="top-streams"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="card">
+                <div class="card-header"><h3 class="card-title">👥 新用戶註冊趨勢（最近 7 天）</h3></div>
+                <div class="card-body">
+                  <canvas id="userChart" height="150"></canvas>
+                </div>
               </div>
             </div>
           </div>
@@ -562,6 +634,380 @@ async function addBalance(userId, username) {
   });
   loadFinance();
 }
+
+// ======= Spinner 載入狀態 (7.5) =======
+function showSpinner(message = '載入中...') {
+  document.querySelector('#global-spinner .mt-3').textContent = message;
+  document.getElementById('global-spinner').style.display = 'flex';
+}
+
+function hideSpinner() {
+  document.getElementById('global-spinner').style.display = 'none';
+}
+
+// ======= Toast 通知 (7.6) =======
+function showToast(message, type = 'success', duration = 3000) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  
+  const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : '⚠';
+  const title = type === 'success' ? '成功' : type === 'error' ? '錯誤' : '警告';
+  
+  toast.innerHTML = `
+    <div class="toast-header">
+      <strong>${icon} ${title}</strong>
+      <button class="toast-close" onclick="this.closest('.toast').remove()">×</button>
+    </div>
+    <div class="toast-body">${message}</div>
+  `;
+  
+  container.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.classList.add('hiding');
+    setTimeout(() => toast.remove(), 300);
+  }, duration);
+}
+
+// ======= 表格分頁 (7.7) =======
+let paginationState = {
+  users: { page: 1, limit: 20, total: 0 },
+  streams: { page: 1, limit: 20, total: 0 },
+  finance: { page: 1, limit: 20, total: 0 }
+};
+
+function renderPagination(tab, total, onPageChange) {
+  const state = paginationState[tab];
+  state.total = total;
+  const totalPages = Math.ceil(total / state.limit);
+  
+  let html = '<div class="pagination-container">';
+  html += `<span class="pagination-info">共 ${total} 筆，第 ${state.page}/${totalPages} 頁</span>`;
+  html += `<button class="pagination-btn" onclick="changePage('${tab}', -1, ${onPageChange})" ${state.page === 1 ? 'disabled' : ''}>上一頁</button>`;
+  
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === 1 || i === totalPages || (i >= state.page - 1 && i <= state.page + 1)) {
+      html += `<button class="pagination-btn ${i === state.page ? 'active' : ''}" onclick="goToPage('${tab}', ${i}, ${onPageChange})">${i}</button>`;
+    } else if (i === state.page - 2 || i === state.page + 2) {
+      html += `<span>...</span>`;
+    }
+  }
+  
+  html += `<button class="pagination-btn" onclick="changePage('${tab}', 1, ${onPageChange})" ${state.page >= totalPages ? 'disabled' : ''}>下一頁</button>`;
+  html += '</div>';
+  
+  return html;
+}
+
+function changePage(tab, delta, callback) {
+  paginationState[tab].page += delta;
+  if (typeof callback === 'function') callback();
+}
+
+function goToPage(tab, page, callback) {
+  paginationState[tab].page = page;
+  if (typeof callback === 'function') callback();
+}
+
+// ======= Chart.js 圖表 (5.3, 5.4) =======
+let viewerChartInstance = null;
+let userChartInstance = null;
+
+async function loadViewerChart() {
+  const ctx = document.getElementById('viewerChart');
+  if (!ctx) return;
+  
+  try {
+    // 嘗試從 API 獲取數據
+    const res = await api('/analytics/viewers?days=7');
+    const data = res.data || res;
+    
+    const labels = data.map(d => d.date || d.day);
+    const values = data.map(d => d.viewers || d.count);
+    
+    if (viewerChartInstance) viewerChartInstance.destroy();
+    
+    viewerChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '觀眾數',
+          data: values,
+          borderColor: '#FF6B35',
+          backgroundColor: 'rgba(255, 107, 53, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  } catch(e) {
+    // API 失敗時使用模擬數據
+    const labels = [];
+    const values = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' }));
+      values.push(Math.floor(Math.random() * 500) + 200);
+    }
+    
+    if (viewerChartInstance) viewerChartInstance.destroy();
+    
+    viewerChartInstance = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '觀眾數（模擬數據）',
+          data: values,
+          borderColor: '#FF6B35',
+          backgroundColor: 'rgba(255, 107, 53, 0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top' } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+}
+
+async function loadUserChart() {
+  const ctx = document.getElementById('userChart');
+  if (!ctx) return;
+  
+  try {
+    const res = await api('/analytics/users?days=7');
+    const data = res.data || res;
+    
+    const labels = data.map(d => d.date || d.day);
+    const values = data.map(d => d.newUsers || d.count);
+    
+    if (userChartInstance) userChartInstance.destroy();
+    
+    userChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '新用戶',
+          data: values,
+          backgroundColor: '#6C5CE7',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  } catch(e) {
+    // 模擬數據
+    const labels = [];
+    const values = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      labels.push(d.toLocaleDateString('zh-TW', { month: 'short', day: 'numeric' }));
+      values.push(Math.floor(Math.random() * 50) + 10);
+    }
+    
+    if (userChartInstance) userChartInstance.destroy();
+    
+    userChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: '新用戶（模擬數據）',
+          data: values,
+          backgroundColor: '#6C5CE7',
+          borderRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: true, position: 'top' } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+}
+
+async function loadTopStreams() {
+  try {
+    const data = await api('/streams?limit=10&sort=viewers');
+    const streams = data.data || [];
+    
+    document.getElementById('top-streams').innerHTML = streams.slice(0, 10).map((s, i) => `
+      <tr>
+        <td><span class="badge badge-${i < 3 ? 'danger' : 'secondary'}">${i + 1}</span></td>
+        <td>${s.streamer?.username || '-'}</td>
+        <td>${s.title}</td>
+        <td>👁 ${s.viewers || 0}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" class="text-center text-muted">無資料</td></tr>';
+  } catch(e) {
+    document.getElementById('top-streams').innerHTML = '<tr><td colspan="4" class="text-center text-muted">載入失敗</td></tr>';
+  }
+}
+
+function refreshViewerChart() {
+  showSpinner('刷新圖表...');
+  Promise.all([loadViewerChart(), loadUserChart()]).then(() => {
+    hideSpinner();
+    showToast('圖表已刷新');
+  });
+}
+
+// 修改原有的 loadDashboard 函數以包含圖表
+const originalLoadDashboard = loadDashboard;
+loadDashboard = async function() {
+  showSpinner('載入儀表板...');
+  try {
+    await originalLoadDashboard();
+    await Promise.all([loadViewerChart(), loadUserChart(), loadTopStreams()]);
+  } finally {
+    hideSpinner();
+  }
+};
+
+// 修改原有的 loadUsers 函數以使用 Toast
+const originalLoadUsers = loadUsers;
+loadUsers = async function() {
+  showSpinner('載入用戶...');
+  try {
+    await originalLoadUsers();
+  } catch(e) {
+    showToast('載入用戶失敗', 'error');
+  } finally {
+    hideSpinner();
+  }
+};
+
+// 修改 toggleStreamer 使用 Toast
+const originalToggleStreamer = toggleStreamer;
+toggleStreamer = async function(userId, isStreamer) {
+  showSpinner('更新中...');
+  try {
+    await originalToggleStreamer(userId, isStreamer);
+    showToast(isStreamer ? '已取消主播身份' : '已設為主播', 'success');
+  } catch(e) {
+    showToast('操作失敗', 'error');
+  } finally {
+    hideSpinner();
+  }
+};
+
+// 修改 toggleBan 使用 Toast
+const originalToggleBan = toggleBan;
+toggleBan = async function(userId, status) {
+  showSpinner('更新中...');
+  try {
+    await originalToggleBan(userId, status);
+    showToast(status === 'active' ? '已封禁用戶' : '已解封用戶', 'success');
+  } catch(e) {
+    showToast('操作失敗', 'error');
+  } finally {
+    hideSpinner();
+  }
+};
+
+// 修改 saveGift 使用 Toast
+const originalSaveGift = saveGift;
+saveGift = async function() {
+  const icon = document.getElementById('gift-icon').value;
+  const name = document.getElementById('gift-name').value;
+  const price = parseInt(document.getElementById('gift-price').value);
+  if (!name || !price) {
+    showToast('請填寫完整資料', 'warning');
+    return;
+  }
+  showSpinner('儲存中...');
+  try {
+    await originalSaveGift();
+    showToast('禮物已新增', 'success');
+  } catch(e) {
+    showToast('新增失敗', 'error');
+  } finally {
+    hideSpinner();
+  }
+};
+
+// 修改 deleteGift 使用 Toast
+const originalDeleteGift = deleteGift;
+deleteGift = async function(giftId) {
+  if (!confirm('確定要刪除此禮物？')) return;
+  showSpinner('刪除中...');
+  try {
+    await originalDeleteGift(giftId);
+    showToast('禮物已刪除', 'success');
+  } catch(e) {
+    showToast('刪除失敗', 'error');
+  } finally {
+    hideSpinner();
+  }
+};
+
+// 修改 forceEndStream 使用 Toast
+const originalForceEndStream = forceEndStream;
+forceEndStream = async function(streamId) {
+  if (!confirm('確定要強制結束此直播？')) return;
+  showSpinner('處理中...');
+  try {
+    await originalForceEndStream(streamId);
+    showToast('直播已結束', 'success');
+  } catch(e) {
+    showToast('操作失敗', 'error');
+  } finally {
+    hideSpinner();
+  }
+};
+
+// 修改 addBalance 使用 Toast
+const originalAddBalance = addBalance;
+addBalance = async function(userId, username) {
+  const amount = prompt('為 ' + username + ' 增加多少金幣？');
+  if (!amount || isNaN(amount)) return;
+  showSpinner('處理中...');
+  try {
+    await originalAddBalance(userId, username);
+    showToast(`已為 ${username} 增加 ${amount} 金幣`, 'success');
+  } catch(e) {
+    showToast('操作失敗', 'error');
+  } finally {
+    hideSpinner();
+  }
+};
 </script>
 </body>
 </html>
