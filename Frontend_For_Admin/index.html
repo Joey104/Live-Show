@@ -3071,6 +3071,272 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }, 10000);
 });
+
+// ===== P1 級功能增強 =====
+
+// 1. 批量操作 - 批量封禁
+async function batchBanUsers(userIds) {
+  if (!userIds || userIds.length === 0) {
+    showToast('請選擇至少一個用戶', 'warning');
+    return;
+  }
+  showConfirm(`確認封禁 ${userIds.length} 個用戶？`, async () => {
+    showSpinner('處理中...');
+    try {
+      let success = 0;
+      for (const userId of userIds) {
+        try {
+          await api(`/admin/users/${userId}`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: 'banned' })
+          });
+          success++;
+        } catch(e) {}
+      }
+      showToast(`已封禁 ${success} 個用戶`, 'success');
+      loadUsersEnhanced();
+    } finally {
+      hideSpinner();
+    }
+  });
+}
+
+// 2. CSV 匯出功能
+function exportTableToCSV(tableId, filename = 'export.csv') {
+  const table = document.getElementById(tableId);
+  if (!table) return;
+  let csv = [];
+  table.querySelectorAll('tr').forEach(row => {
+    let rowData = [];
+    row.querySelectorAll('td, th').forEach(col => {
+      rowData.push('"' + col.textContent.trim().replace(/"/g, '""') + '"');
+    });
+    csv.push(rowData.join(','));
+  });
+  const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + encodeURIComponent(csv.join('\n'));
+  const link = document.createElement('a');
+  link.setAttribute('href', csvContent);
+  link.setAttribute('download', filename);
+  link.click();
+}
+
+// 3. 聊天記錄分頁 - 每頁 50 條
+let chatCurrentPage = 1, currentStreamId = '';
+const chatPageSize = 50;
+async function loadChatHistory(streamId) {
+  currentStreamId = streamId;
+  const offset = (chatCurrentPage - 1) * chatPageSize;
+  try {
+    const data = await api(`/streams/${streamId}/messages?limit=${chatPageSize}&offset=${offset}`);
+    const messages = data.data || [];
+    const chatTable = document.getElementById('chat-table');
+    if (chatTable) {
+      chatTable.innerHTML = messages.map(m => `
+        <tr>
+          <td>${m.user?.avatar || '👤'} ${m.user?.username}</td>
+          <td>${m.content}</td>
+          <td>${m.user?.level || '普通用戶'}</td>
+          <td>${new Date(m.createdAt).toLocaleTimeString('zh-TW')}</td>
+          <td>
+            <button class="btn btn-xs btn-warning" onclick="muteUser('${m.userId}', '${m.user?.username}', 30)">
+              🔇 禁言
+            </button>
+          </td>
+        </tr>
+      `).join('') || '<tr><td colspan="5" class="text-center text-muted">暫無聊天記錄</td></tr>';
+    }
+    const totalPages = Math.ceil((data.total || 0) / chatPageSize);
+    const container = document.getElementById('chat-pagination');
+    if (container) {
+      let html = '<div class="pagination-container"><span class="pagination-info">第 ' + chatCurrentPage + ' / ' + totalPages + ' 頁</span>';
+      if (chatCurrentPage > 1) html += `<button class="pagination-btn" onclick="chatCurrentPage--; loadChatHistory('${streamId}')">← 上一頁</button>`;
+      for (let i = Math.max(1, chatCurrentPage - 2); i <= Math.min(totalPages, chatCurrentPage + 2); i++) {
+        html += `<button class="pagination-btn ${i === chatCurrentPage ? 'active' : ''}" onclick="chatCurrentPage=${i}; loadChatHistory('${streamId}')">${i}</button>`;
+      }
+      if (chatCurrentPage < totalPages) html += `<button class="pagination-btn" onclick="chatCurrentPage++; loadChatHistory('${streamId}')">下一頁 →</button>`;
+      html += '</div>';
+      container.innerHTML = html;
+    }
+  } catch(e) { console.error('Load chat error:', e); }
+}
+
+// 4. 觀眾列表即時顯示
+async function showLiveViewers(streamId) {
+  try {
+    const data = await api(`/streams/${streamId}`);
+    const viewers = data.data?.viewers || [];
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">👥 直播間觀眾 (${viewers.length} 人)</h5>
+            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
+          <div class="modal-body" style="max-height:400px;overflow-y:auto">
+            ${viewers.map(v => `
+              <div class="card mb-2"><div class="card-body py-2">
+                <span class="badge" style="font-size:16px">${v.avatar || '👤'}</span>
+                <strong>${v.username}</strong>
+                <span class="badge badge-secondary ml-2">${v.level || '普通'}</span>
+              </div></div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    $(modal).modal('show');
+    $(modal).on('hidden.bs.modal', () => modal.remove());
+  } catch(e) { showToast('載入觀眾列表失敗', 'error'); }
+}
+
+// 5. 用戶登入紀錄
+async function showUserLoginHistory(userId, username) {
+  try {
+    const data = await api(`/admin/users/${userId}/login-history`).catch(() => ({ data: [] }));
+    const logins = data.data || [];
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.innerHTML = `
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header"><h5 class="modal-title">🔐 ${username} 登入紀錄</h5>
+            <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button></div>
+          <div class="modal-body">
+            <table class="table table-sm">
+              <thead><tr><th>IP 地址</th><th>設備</th><th>登入時間</th></tr></thead>
+              <tbody>
+                ${logins.slice(0, 20).map(l => `
+                  <tr><td><code>${l.ip}</code></td>
+                    <td>${l.userAgent?.substring(0, 40)}...</td>
+                    <td>${new Date(l.createdAt).toLocaleString('zh-TW')}</td></tr>
+                `).join('') || '<tr><td colspan="3" class="text-center text-muted">暫無登入紀錄</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+    $(modal).modal('show');
+    $(modal).on('hidden.bs.modal', () => modal.remove());
+  } catch(e) { showToast('載入登入紀錄失敗', 'error'); }
+}
+
+// 6. 禮物預覽
+function previewGift() {
+  const icon = document.getElementById('gift-icon')?.value || '🎁';
+  const name = document.getElementById('gift-name')?.value || '新禮物';
+  const price = document.getElementById('gift-price')?.value || '0';
+  const preview = document.getElementById('gift-preview');
+  if (preview) {
+    preview.innerHTML = `<div class="card"><div class="card-body text-center"><div style="font-size:48px">${icon}</div><h5>${name}</h5><p class="text-muted">💰 ${price} 金幣</p></div></div>`;
+  }
+}
+
+// 7. 禮物批量上下架
+async function batchToggleGifts(giftIds, action) {
+  if (!giftIds || giftIds.length === 0) {
+    showToast('請選擇至少一個禮物', 'warning');
+    return;
+  }
+  showSpinner('處理中...');
+  try {
+    let success = 0;
+    for (const giftId of giftIds) {
+      try {
+        await api(`/admin/gifts/${giftId}/toggle`, { method: 'POST' });
+        success++;
+      } catch(e) {}
+    }
+    showToast(`已${action === 'on' ? '上架' : '下架'} ${success} 個禮物`, 'success');
+    loadGifts();
+  } finally {
+    hideSpinner();
+  }
+}
+
+// 8. 平台總餘額統計
+async function loadPlatformBalance() {
+  try {
+    const data = await api('/admin/users?limit=1000');
+    const users = data.data || [];
+    const totalBalance = users.reduce((sum, u) => sum + (u.balance || 0), 0);
+    const card = document.getElementById('stat-total-balance');
+    if (card) card.textContent = totalBalance;
+  } catch(e) { console.error('Load platform balance error:', e); }
+}
+
+// 9. 充值和提領統計
+async function loadFinanceStats(range = 7) {
+  try {
+    const data = await api(`/admin/transactions?limit=1000`);
+    const transactions = data.data || [];
+    const now = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - range);
+    const filtered = transactions.filter(t => {
+      const tDate = new Date(t.createdAt);
+      return tDate >= startDate && tDate <= now;
+    });
+    const byType = {};
+    filtered.forEach(t => {
+      if (!byType[t.type]) byType[t.type] = { count: 0, total: 0 };
+      byType[t.type].count++;
+      byType[t.type].total += t.amount || 0;
+    });
+    const labels = Object.keys(byType);
+    const data_values = labels.map(type => byType[type].total);
+    if (window.financeStatsChart) window.financeStatsChart.destroy();
+    const ctx = document.getElementById('finance-stats-chart');
+    if (ctx) {
+      window.financeStatsChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: `${range}日內交易金額`, data: data_values, backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8'] }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } }, scales: { y: { beginAtZero: true } } }
+      });
+    }
+  } catch(e) { console.error('Load finance stats error:', e); }
+}
+
+// 10. 主播收益排行
+async function loadStreamerRevenue(period = 'month') {
+  try {
+    const data = await api('/admin/revenue/stats');
+    const streamers = (data.data?.topStreamers || []).slice(0, 20);
+    const html = streamers.map((s, i) => `<tr><td>${i + 1}</td><td><strong>${s.username}</strong></td><td>${s.giftCount} 筆</td><td>💰 <strong>${s.totalRevenue}</strong></td></tr>`).join('');
+    const table = document.getElementById('streamer-revenue-table');
+    if (table) table.innerHTML = html || '<tr><td colspan="4" class="text-center text-muted">暫無數據</td></tr>';
+  } catch(e) { console.error('Load streamer revenue error:', e); }
+}
+
+// 11. 禮物收益圓餅圖
+async function loadGiftRevenueChart() {
+  try {
+    const data = await api('/admin/gifts/stats');
+    const gifts = (data.data || []).slice(0, 5);
+    const labels = gifts.map(g => g.giftName || '未知禮物');
+    const values = gifts.map(g => g.totalRevenue || 0);
+    const colors = ['#FF6B35', '#F7931E', '#FDB913', '#28a745', '#17a2b8'];
+    if (window.giftRevenueChart) window.giftRevenueChart.destroy();
+    const ctx = document.getElementById('gift-revenue-chart');
+    if (ctx) {
+      window.giftRevenueChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: { labels, datasets: [{ data: values, backgroundColor: colors }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+      });
+    }
+  } catch(e) { console.error('Load gift revenue chart error:', e); }
+}
+
+// 12. 初始化 P1 功能
+document.addEventListener('DOMContentLoaded', () => {
+  loadPlatformBalance();
+  loadFinanceStats(7);
+  loadGiftRevenueChart();
+  loadStreamerRevenue('month');
+});
 </script>
 </body>
 </html>
