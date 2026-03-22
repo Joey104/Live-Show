@@ -24,28 +24,7 @@
     .btn-primary:hover { background-color: var(--primary-dark); border-color: var(--primary-dark); }
     .nav-sidebar .nav-link.active { background-color: var(--primary); }
     
-    /* FontAwesome 字体路径覆盖 */
-    @font-face {
-      font-family: 'Font Awesome 5 Free';
-      font-style: normal;
-      font-weight: 400;
-      font-display: block;
-      src: url("assets/webfonts/fa-regular-400.woff2") format("woff2");
-    }
-    @font-face {
-      font-family: 'Font Awesome 5 Free';
-      font-style: normal;
-      font-weight: 900;
-      font-display: block;
-      src: url("assets/webfonts/fa-solid-900.woff2") format("woff2");
-    }
-    @font-face {
-      font-family: 'Font Awesome 5 Brands';
-      font-style: normal;
-      font-weight: 400;
-      font-display: block;
-      src: url("assets/webfonts/fa-brands-400.woff2") format("woff2");
-    }
+    /* FontAwesome 字体路径由 fontawesome.min.css 提供 */
   </style>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
@@ -270,7 +249,7 @@
               </div>
               <div class="card-body">
                 <div class="d-flex justify-content-center align-items-center" style="height: 300px;">
-                  <p class="text-muted">📊 图表区域 - 集成 Chart.js 后显示数据</p>
+                  <canvas id="viewersChart" style="width:100%;height:200px;"></canvas>
                 </div>
               </div>
             </div>
@@ -394,6 +373,7 @@
 <script src="assets/js/bootstrap.bundle.min.js"></script>
 <!-- AdminLTE App (本地) -->
 <script src="assets/js/adminlte.min.js"></script>
+<script src="assets/js/chart.min.js"></script>
 
 <script>
   // 页面加载完成后的初始化
@@ -404,3 +384,33 @@
 
 </body>
 </html>
+<script>
+// 實時觀看人數折線圖
+window.addEventListener('DOMContentLoaded', function() {
+  var ctx = document.getElementById('viewersChart');
+  if (ctx) {
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['12:00','12:10','12:20','12:30','12:40','12:50','13:00'],
+        datasets: [{
+          label: '在線觀眾數',
+          data: [3200, 5800, 7200, 8420, 9100, 7800, 8420],
+          borderColor: '#FF6B35',
+          backgroundColor: 'rgba(255,107,53,0.1)',
+          borderWidth: 2,
+          fill: true,
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: false, grid: { color: 'rgba(0,0,0,0.05)' } }
+        }
+      }
+    });
+  }
+});
+</script>
