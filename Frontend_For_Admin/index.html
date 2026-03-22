@@ -128,6 +128,11 @@
             </a>
           </li>
           <li class="nav-item">
+            <a href="#" class="nav-link" onclick="showTab('markets')">
+              <i class="nav-icon fas fa-chart-bar"></i><p>預測市場</p>
+            </a>
+          </li>
+          <li class="nav-item">
             <a href="#" class="nav-link" onclick="showTab('settings')">
               <i class="nav-icon fas fa-cog"></i><p>系統設定</p>
             </a>
@@ -422,6 +427,15 @@
               </table>
             </div>
           </div>
+          <div class="card mt-4">
+            <div class="card-header"><h3 class="card-title">禮物銷售統計</h3></div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover table-sm">
+                <thead><tr><th>禮物</th><th>價格</th><th>銷售金額</th><th>銷售數量</th></tr></thead>
+                <tbody id="gift-stats-table"></tbody>
+              </table>
+            </div>
+          </div>
         </div>
       </section>
     </div>
@@ -471,6 +485,40 @@
       </section>
     </div>
 
+    <!-- 預測市場 -->
+    <div id="tab-markets" style="display:none">
+      <div class="content-header">
+        <div class="container-fluid">
+          <h1 class="m-0">預測市場管理</h1>
+        </div>
+      </div>
+      <section class="content">
+        <div class="container-fluid">
+          <div class="card">
+            <div class="card-header">
+              <h3 class="card-title">進行中的預測市場</h3>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover table-sm">
+                <thead>
+                  <tr>
+                    <th>市場標題</th>
+                    <th>所屬直播</th>
+                    <th>狀態</th>
+                    <th>Yes 金額</th>
+                    <th>No 金額</th>
+                    <th>押注人數</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="markets-list"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <!-- 系統設定 -->
     <div id="tab-settings" style="display:none">
       <div class="content-header">
@@ -502,6 +550,66 @@
               <table class="table table-hover">
                 <thead><tr><th>詞語</th><th>等級</th><th>操作</th></tr></thead>
                 <tbody id="sensitive-words-table"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3 class="card-title">平台抽成比例設定</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label>抽成比例</label>
+                <div class="input-group">
+                  <input type="number" id="commission-rate" class="form-control" min="0" max="100" step="0.1" placeholder="e.g. 30">
+                  <div class="input-group-append">
+                    <span class="input-group-text">%</span>
+                  </div>
+                </div>
+                <small class="form-text text-muted">平台從每筆交易中抽取的百分比</small>
+              </div>
+              <button class="btn btn-primary" onclick="saveCommissionRate()">儲存設定</button>
+            </div>
+          </div>
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3 class="card-title">禮物特效設定</h3>
+            </div>
+            <div class="card-body">
+              <div class="form-group">
+                <label>特效觸發金額閾值</label>
+                <div class="input-group">
+                  <input type="number" id="effect-threshold" class="form-control" min="0" placeholder="e.g. 5000">
+                  <div class="input-group-append">
+                    <span class="input-group-text">元</span>
+                  </div>
+                </div>
+                <small class="form-text text-muted">當禮物金額達到此值時觸發特效</small>
+              </div>
+              <button class="btn btn-primary" onclick="saveEffectSettings()">儲存設定</button>
+            </div>
+          </div>
+          <div class="card mt-4">
+            <div class="card-header">
+              <h3 class="card-title">管理員帳號管理</h3>
+              <div class="card-tools">
+                <button class="btn btn-sm btn-outline-secondary" onclick="loadAdminList()">
+                  <i class="fas fa-sync-alt"></i> 刷新
+                </button>
+              </div>
+            </div>
+            <div class="card-body table-responsive p-0">
+              <table class="table table-hover table-sm">
+                <thead>
+                  <tr>
+                    <th>用戶名</th>
+                    <th>Email</th>
+                    <th>狀態</th>
+                    <th>建立時間</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody id="admins-table"></tbody>
               </table>
             </div>
           </div>
@@ -753,7 +861,7 @@ if (TOKEN) {
 
 // ======= Tab 切換 =======
 function showTab(name) {
-  ['dashboard','users','streams','gifts','finance','revenue','settings','streamer-applications','reports'].forEach(t => {
+  ['dashboard','users','streams','gifts','finance','revenue','markets','settings','streamer-applications','reports'].forEach(t => {
     document.getElementById('tab-'+t).style.display = t===name ? 'block' : 'none';
   });
   document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
@@ -764,6 +872,7 @@ function showTab(name) {
   if(name==='gifts') loadGifts();
   if(name==='finance') loadFinance();
   if(name==='revenue') loadRevenueStats();
+  if(name==='markets') loadMarkets();
   if(name==='settings') loadSettings();
   if(name==='streamer-applications') loadStreamerApplications();
   if(name==='reports') loadReports();
@@ -1229,11 +1338,60 @@ async function loadFinance() {
         <td>${u.isStreamer ? '<span class="badge badge-primary">主播</span>' : '觀眾'}</td>
         <td>
           <button class="btn btn-xs btn-success" onclick="addBalance('${u.id}','${u.username}')">增加餘額</button>
+          <button class="btn btn-xs btn-danger" onclick="deductBalance('${u.id}','${u.username}',${u.balance})">扣除餘額</button>
         </td>
       </tr>
     `).join('');
+    
+    // 載入禮物統計
+    await loadGiftStats();
   } catch(e) {
     document.getElementById('finance-table').innerHTML = '<tr><td colspan="4" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+async function deductBalance(userId, username, currentBalance) {
+  const amount = prompt(`扣除 ${username} 的餘額\n\n當前餘額：${currentBalance}\n\n請輸入扣除金額：`);
+  if (!amount || isNaN(amount) || parseInt(amount) <= 0) {
+    showToast('操作已取消或輸入無效', 'warning');
+    return;
+  }
+  
+  if (parseInt(amount) > currentBalance) {
+    showToast(`扣除金額 ${amount} 超過當前餘額 ${currentBalance}`, 'error');
+    return;
+  }
+  
+  showSpinner('扣除中...');
+  try {
+    const reason = prompt('請輸入扣除原因（可選）：') || '管理員扣款';
+    const result = await api(`/admin/users/${userId}/deduct-balance`, {
+      method: 'POST',
+      body: JSON.stringify({ amount: parseInt(amount), reason })
+    });
+    showToast(result.message || '已扣除餘額', 'success');
+    loadFinance();
+  } catch(e) {
+    showToast('扣除失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+async function loadGiftStats() {
+  try {
+    const data = await api('/admin/gifts/stats');
+    const stats = data.data || [];
+    document.getElementById('gift-stats-table').innerHTML = stats.map(g => `
+      <tr>
+        <td>${g.giftIcon} ${g.giftName}</td>
+        <td>${g.giftPrice}</td>
+        <td>💰 ${g.totalRevenue}</td>
+        <td>${g.totalQuantity || g.recordCount}</td>
+      </tr>
+    `).join('') || '<tr><td colspan="4" class="text-center text-muted">暫無禮物銷售數據</td></tr>';
+  } catch(e) {
+    document.getElementById('gift-stats-table').innerHTML = '<tr><td colspan="4" class="text-center text-muted">暫無禮物銷售數據</td></tr>';
   }
 }
 
@@ -1264,8 +1422,117 @@ async function loadRevenueStats() {
   }
 }
 
+// ======= 預測市場管理 =======
+async function loadMarkets() {
+  try {
+    const data = await api('/admin/markets');
+    const markets = data.data || [];
+    document.getElementById('markets-list').innerHTML = markets.map(m => `
+      <tr>
+        <td><strong>${m.title}</strong></td>
+        <td>${m.streamTitle}</td>
+        <td><span class="badge badge-info">${m.status==='active'?'進行中':'已結算'}</span></td>
+        <td>💰 ${m.yesVolume} (${(m.yesPrice*100).toFixed(0)}%)</td>
+        <td>💰 ${m.noVolume} (${(m.noPrice*100).toFixed(0)}%)</td>
+        <td>${m.bettorCount} 人</td>
+        <td>
+          <button class="btn btn-xs btn-primary" onclick="viewPositions('${m.id}', '${m.title.replace(/'/g, "\\'")}')">查看押注</button>
+          <button class="btn btn-xs btn-warning" onclick="showResolveModal('${m.id}', '${m.title.replace(/'/g, "\\'")}')">強制結算</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="7" class="text-center text-muted">暫無進行中的預測市場</td></tr>';
+  } catch(e) {
+    console.error('Markets error:', e);
+    showToast('載入預測市場失敗', 'error');
+  }
+}
+
+function showResolveModal(marketId, marketTitle) {
+  const winner = prompt(`強制結算「${marketTitle}」\n\n請選擇勝者：\n(輸入 yes 或 no)`);
+  if (!winner || !['yes', 'no'].includes(winner.toLowerCase())) {
+    showToast('操作已取消或輸入無效', 'warning');
+    return;
+  }
+  resolveMarket(marketId, winner.toLowerCase());
+}
+
+async function resolveMarket(marketId, winner) {
+  showSpinner('強制結算中...');
+  try {
+    const result = await api(`/admin/markets/${marketId}/resolve`, {
+      method: 'POST',
+      body: JSON.stringify({ winner })
+    });
+    showToast(result.message || '市場已結算', 'success');
+    loadMarkets();
+  } catch(e) {
+    showToast('結算失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+async function viewPositions(marketId, marketTitle) {
+  showSpinner('載入押注記錄...');
+  try {
+    const data = await api(`/admin/markets/${marketId}/positions`);
+    const positions = data.data || [];
+    const html = `
+      <div class="modal fade" id="positions-modal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">「${marketTitle}」押注記錄</h5>
+              <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>用戶</th>
+                    <th>選擇</th>
+                    <th>份額</th>
+                    <th>平均成本</th>
+                    <th>總金額</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${positions.map(p => `
+                    <tr>
+                      <td>${p.username}</td>
+                      <td>${p.option==='yes'?'👍 是':'👎 否'}</td>
+                      <td>${p.shares.toFixed(2)}</td>
+                      <td>${p.avgCost.toFixed(2)}</td>
+                      <td>💰 ${p.totalAmount}</td>
+                    </tr>
+                  `).join('') || '<tr><td colspan="5" class="text-center text-muted">暫無押注記錄</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">關閉</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', html);
+    $('#positions-modal').modal('show');
+    $('#positions-modal').on('hidden.bs.modal', function() { this.remove(); });
+  } catch(e) {
+    showToast('載入押注記錄失敗', 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
 // ======= 系統設定 =======
-async function loadSettings() { loadAnnouncements(); loadSensitiveWords(); }
+async function loadSettings() { 
+  loadAnnouncements(); 
+  loadSensitiveWords(); 
+  loadSystemSettings(); 
+  loadAdminList(); 
+}
 async function loadAnnouncements() {
   try {
     const data = await api('/admin/announcements');
@@ -1830,6 +2097,111 @@ addBalance = async function(userId, username) {
     hideSpinner();
   }
 };
+
+// ======= 系統設定功能 =======
+
+// 載入系統設定
+async function loadSystemSettings() {
+  try {
+    const data = await api('/admin/settings');
+    const settings = data.data || {};
+    if (document.getElementById('commission-rate')) {
+      document.getElementById('commission-rate').value = ((settings.commissionRate || 0.3) * 100).toFixed(1);
+    }
+    if (document.getElementById('effect-threshold')) {
+      document.getElementById('effect-threshold').value = settings.giftEffectThreshold || 5000;
+    }
+  } catch(e) {
+    console.error('Load settings error:', e);
+  }
+}
+
+// 儲存抽成比例
+async function saveCommissionRate() {
+  const ratePercent = document.getElementById('commission-rate').value;
+  if (!ratePercent || ratePercent < 0 || ratePercent > 100) {
+    showToast('請輸入有效的抽成比例 (0-100)', 'warning');
+    return;
+  }
+  
+  showSpinner('儲存中...');
+  try {
+    const result = await api('/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ commissionRate: parseFloat(ratePercent) / 100 })
+    });
+    showToast(result.message || '抽成比例已儲存', 'success');
+    loadSystemSettings();
+  } catch(e) {
+    showToast('儲存失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+// 儲存特效設定
+async function saveEffectSettings() {
+  const threshold = document.getElementById('effect-threshold').value;
+  if (!threshold || threshold < 0) {
+    showToast('請輸入有效的金額閾值', 'warning');
+    return;
+  }
+  
+  showSpinner('儲存中...');
+  try {
+    const result = await api('/admin/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ giftEffectThreshold: parseInt(threshold) })
+    });
+    showToast(result.message || '特效設定已儲存', 'success');
+    loadSystemSettings();
+  } catch(e) {
+    showToast('儲存失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
+
+// 載入管理員列表
+async function loadAdminList() {
+  try {
+    const data = await api('/admin/admins');
+    const admins = data.data || [];
+    document.getElementById('admins-table').innerHTML = admins.map(a => `
+      <tr>
+        <td><strong>${a.username}</strong></td>
+        <td>${a.email}</td>
+        <td><span class="badge badge-success">管理員</span></td>
+        <td>${new Date(a.createdAt).toLocaleString('zh-TW')}</td>
+        <td>
+          <button class="btn btn-xs btn-danger" onclick="toggleAdminStatus('${a.id}','${a.username}')">移除權限</button>
+        </td>
+      </tr>
+    `).join('') || '<tr><td colspan="5" class="text-center text-muted">暫無管理員</td></tr>';
+  } catch(e) {
+    console.error('Load admins error:', e);
+    document.getElementById('admins-table').innerHTML = '<tr><td colspan="5" class="text-center text-danger">載入失敗</td></tr>';
+  }
+}
+
+// 切換管理員身份
+async function toggleAdminStatus(userId, username) {
+  const confirmed = confirm(`確定要移除 ${username} 的管理員權限嗎？`);
+  if (!confirmed) return;
+  
+  showSpinner('更新中...');
+  try {
+    const result = await api(`/admin/admins/${userId}/toggle`, {
+      method: 'POST'
+    });
+    showToast(result.message || '權限已更新', 'success');
+    loadAdminList();
+  } catch(e) {
+    showToast('操作失敗: ' + e.message, 'error');
+  } finally {
+    hideSpinner();
+  }
+}
 </script>
 </body>
 </html>
