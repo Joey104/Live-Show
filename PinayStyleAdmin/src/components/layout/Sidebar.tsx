@@ -4,6 +4,8 @@
  */
 
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import i18n from '../../lib/i18n'
 import {
   LayoutDashboard,
   Users,
@@ -18,6 +20,7 @@ import {
   Layers3,
   FlagTriangleRight,
   UserCog,
+  Globe,
 } from 'lucide-react'
 
 /**
@@ -70,68 +73,67 @@ export interface SidebarProps {
 }
 
 /**
- * @description Static sidebar configuration – covers all requested modules.
- */
-export const SIDEBAR_GROUPS: SidebarGroup[] = [
-  {
-    id: 'overview',
-    label: '總覽',
-    items: [
-      { id: 'dashboard', label: '儀表板 Dashboard', icon: LayoutDashboard },
-      { id: 'revenue', label: '收益分析', icon: LineChart },
-      { id: 'reports', label: '報表中心', icon: ReceiptText },
-    ],
-  },
-  {
-    id: 'users',
-    label: '用戶 & 等級',
-    items: [
-      { id: 'players', label: 'Player / 用戶管理', icon: Users },
-      { id: 'membership', label: '會員等級管理', icon: UserCog },
-      { id: 'broadcasterApplications', label: '主播申請審核', icon: FlagTriangleRight },
-    ],
-  },
-  {
-    id: 'economy',
-    label: '經濟系統',
-    items: [
-      { id: 'bonus', label: 'Bonus 管理', icon: Coins },
-      { id: 'finance', label: '財務管理 (點數/交易)', icon: Wallet },
-      { id: 'payments', label: '支付管理 (通道/提領)', icon: Layers3 },
-      { id: 'marketing', label: '市場營銷 (活動/券/推薦/任務)', icon: Gift },
-    ],
-  },
-  {
-    id: 'content',
-    label: '內容 & 直播',
-    items: [
-      { id: 'live', label: '直播管理', icon: RadioTower },
-      { id: 'gifts', label: '禮物管理', icon: Gift },
-      { id: 'prediction', label: '預測市場', icon: LineChart },
-      { id: 'moderation', label: '舉報 / 風控稽核', icon: Shield },
-    ],
-  },
-  {
-    id: 'system',
-    label: '權限 & 系統',
-    items: [
-      { id: 'rbac', label: '權限管理 (RBAC)', icon: Shield },
-      { id: 'system', label: '系統設定 / 公告', icon: Settings },
-    ],
-  },
-]
-
-/**
  * @description Left sidebar with collapse toggle and drag-to-resize behavior.
  */
 export function Sidebar(props: SidebarProps) {
   const { activeId, onChange } = props
+  const { t } = useTranslation()
   const [collapsed, setCollapsed] = useState(false)
   const [width, setWidth] = useState(260)
   const [isResizing, setIsResizing] = useState(false)
+  const [currentLang, setCurrentLang] = useState(i18n.language)
 
   const minWidth = 200
   const maxWidth = 360
+
+  const sidebarGroups: SidebarGroup[] = [
+    {
+      id: 'overview',
+      label: t('sidebar.groups.overview'),
+      items: [
+        { id: 'dashboard', label: t('sidebar.items.dashboard'), icon: LayoutDashboard },
+        { id: 'revenue', label: t('sidebar.items.revenue'), icon: LineChart },
+        { id: 'reports', label: t('sidebar.items.reports'), icon: ReceiptText },
+      ],
+    },
+    {
+      id: 'users',
+      label: t('sidebar.groups.users'),
+      items: [
+        { id: 'players', label: t('sidebar.items.players'), icon: Users },
+        { id: 'membership', label: t('sidebar.items.membership'), icon: UserCog },
+        { id: 'broadcasterApplications', label: t('sidebar.items.broadcasterApplications'), icon: FlagTriangleRight },
+      ],
+    },
+    {
+      id: 'economy',
+      label: t('sidebar.groups.economy'),
+      items: [
+        { id: 'bonus', label: t('sidebar.items.bonus'), icon: Coins },
+        { id: 'finance', label: t('sidebar.items.finance'), icon: Wallet },
+        { id: 'payments', label: t('sidebar.items.payments'), icon: Layers3 },
+        { id: 'marketing', label: t('sidebar.items.marketing'), icon: Gift },
+      ],
+    },
+    {
+      id: 'content',
+      label: t('sidebar.groups.content'),
+      items: [
+        { id: 'live', label: t('sidebar.items.live'), icon: RadioTower },
+        { id: 'gifts', label: t('sidebar.items.gifts'), icon: Gift },
+        { id: 'prediction', label: t('sidebar.items.prediction'), icon: LineChart },
+        { id: 'moderation', label: t('sidebar.items.moderation'), icon: Shield },
+      ],
+    },
+    {
+      id: 'system_group',
+      label: t('sidebar.groups.system_group'),
+      items: [
+        { id: 'rbac', label: t('sidebar.items.rbac'), icon: Shield },
+        { id: 'system', label: t('sidebar.items.system'), icon: Settings },
+      ],
+    },
+  ]
 
   const handleMouseMove = useCallback(
     (event: MouseEvent) => {
@@ -157,6 +159,12 @@ export function Sidebar(props: SidebarProps) {
     }
   }, [handleMouseMove, handleMouseUp, isResizing])
 
+  const handleLangSwitch = (lang: string) => {
+    i18n.changeLanguage(lang)
+    localStorage.setItem('admin-lang', lang)
+    setCurrentLang(lang)
+  }
+
   return (
     <aside
       className="relative flex h-full flex-col border-r border-slate-800/80 bg-slate-950/95"
@@ -177,7 +185,7 @@ export function Sidebar(props: SidebarProps) {
         </div>
         <button
           type="button"
-          aria-label={collapsed ? '展開側邊欄' : '收合側邊欄'}
+          aria-label={collapsed ? t('topbar.expand') : t('topbar.collapse')}
           onClick={() => setCollapsed((v) => !v)}
           className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-slate-700/80 bg-slate-900/90 text-slate-300 hover:border-sky-500/80 hover:text-sky-300"
         >
@@ -187,7 +195,7 @@ export function Sidebar(props: SidebarProps) {
 
       {/* Navigation groups */}
       <nav className="flex-1 space-y-3 overflow-y-auto px-2 py-3">
-        {SIDEBAR_GROUPS.map((group) => (
+        {sidebarGroups.map((group) => (
           <div key={group.id} className="space-y-1">
             {!collapsed && (
               <div className="px-2 text-[10px] font-semibold uppercase tracking-wide text-slate-500">
@@ -227,6 +235,49 @@ export function Sidebar(props: SidebarProps) {
           </div>
         ))}
       </nav>
+
+      {/* Language switcher */}
+      <div className="border-t border-slate-800/80 px-2 py-2">
+        {collapsed ? (
+          <button
+            type="button"
+            title={t('lang.switch')}
+            onClick={() => handleLangSwitch(currentLang === 'zh-TW' ? 'en' : 'zh-TW')}
+            className="inline-flex w-full items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-slate-800/80 hover:text-sky-300"
+          >
+            <Globe className="h-4 w-4" />
+          </button>
+        ) : (
+          <div className="flex items-center gap-1 px-1">
+            <Globe className="h-3.5 w-3.5 text-slate-500" />
+            <button
+              type="button"
+              onClick={() => handleLangSwitch('zh-TW')}
+              className={[
+                'rounded px-1.5 py-0.5 text-[10px] font-semibold transition',
+                currentLang === 'zh-TW'
+                  ? 'bg-sky-600/30 text-sky-300'
+                  : 'text-slate-500 hover:text-slate-300',
+              ].join(' ')}
+            >
+              {t('lang.zh')}
+            </button>
+            <span className="text-[10px] text-slate-700">|</span>
+            <button
+              type="button"
+              onClick={() => handleLangSwitch('en')}
+              className={[
+                'rounded px-1.5 py-0.5 text-[10px] font-semibold transition',
+                currentLang === 'en'
+                  ? 'bg-sky-600/30 text-sky-300'
+                  : 'text-slate-500 hover:text-slate-300',
+              ].join(' ')}
+            >
+              {t('lang.en')}
+            </button>
+          </div>
+        )}
+      </div>
 
       {/* Resize handle – only when expanded */}
       {!collapsed && (

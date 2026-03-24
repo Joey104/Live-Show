@@ -4,6 +4,7 @@
  */
 
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Download, HelpCircle, Plus, RefreshCw } from 'lucide-react'
 
 /**
@@ -36,6 +37,7 @@ export interface TopBarProps {
 export function TopBar(props: TopBarProps) {
   const { title, subtitle, actions, extraActions } = props
   const { showCreate, showExport, showRefresh, showHelp } = actions || {}
+  const { t } = useTranslation()
 
   return (
     <header className="flex h-16 items-center justify-between border-b border-slate-800/80 bg-slate-950/80 px-5 backdrop-blur">
@@ -55,7 +57,7 @@ export function TopBar(props: TopBarProps) {
             className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[10px] font-medium text-slate-200 hover:border-sky-500/80 hover:text-sky-200"
           >
             <HelpCircle className="h-3 w-3" />
-            Help
+            {t('topbar.help')}
           </button>
         )}
         {showRefresh && (
@@ -64,7 +66,7 @@ export function TopBar(props: TopBarProps) {
             className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[10px] font-medium text-slate-200 hover:border-sky-500/80 hover:text-sky-200"
           >
             <RefreshCw className="h-3 w-3" />
-            Refresh
+            {t('topbar.refresh')}
           </button>
         )}
         {showExport && (
@@ -73,7 +75,7 @@ export function TopBar(props: TopBarProps) {
             className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 px-2 py-1 text-[10px] font-medium text-slate-200 hover:border-sky-500/80 hover:text-sky-200"
           >
             <Download className="h-3 w-3" />
-            Export
+            {t('topbar.export')}
           </button>
         )}
         {showCreate && (
@@ -82,7 +84,7 @@ export function TopBar(props: TopBarProps) {
             className="inline-flex items-center gap-1 rounded-full bg-sky-600 px-3 py-1 text-[10px] font-semibold text-white shadow-sm shadow-sky-900 hover:bg-sky-500"
           >
             <Plus className="h-3 w-3" />
-            New
+            {t('topbar.create')}
           </button>
         )}
       </div>

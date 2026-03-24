@@ -4,6 +4,7 @@
  */
 
 import { useState, lazy, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 import { AdminLayout } from '../../layouts/AdminLayout'
 import type { AdminModuleId } from '../../components/layout/Sidebar'
 import { DashboardPage } from './DashboardPage'
@@ -35,9 +36,9 @@ import BroadcasterApplicationsPage from './BroadcasterApplicationsPage'
 import { DialogHost } from '../../components/common/DialogHost'
 
 /**
- * @description Human-readable metadata for each module, used for header text and loading overlay.
+ * @description Returns human-readable metadata for each module using i18n translations.
  */
-const MODULE_META: Record<
+function getModuleMeta(t: ReturnType<typeof useTranslation>['t']): Record<
   AdminModuleId,
   {
     title: string
@@ -49,93 +50,97 @@ const MODULE_META: Record<
       showHelp?: boolean
     }
   }
-> = {
-  dashboard: {
-    title: '儀表板 Dashboard',
-    subtitle: '總覽用戶、直播、收入與待辦工作台狀態。',
-    actions: { showRefresh: true, showHelp: true },
-  },
-  players: {
-    title: 'Player / 用戶管理',
-    subtitle: '搜尋、篩選與管理 Player / Broadcaster 帳號與點數。',
-    actions: { showCreate: false, showExport: true, showRefresh: true, showHelp: true },
-  },
-  membership: {
-    title: '會員等級管理',
-    subtitle: '定義會員等級門檻、提成倍率與權益。',
-    actions: { showCreate: true, showRefresh: true, showHelp: true },
-  },
-  bonus: {
-    title: 'Bonus 管理',
-    subtitle: '管理 Bonus 餘額、等級、兌換率與發放 / 回滾。',
-    actions: { showCreate: true, showExport: true, showHelp: true },
-  },
-  marketing: {
-    title: '市場營銷（活動 / 優惠券 / 推薦 / 任務）',
-    subtitle: '一站式管理成長與促活相關行銷模組。',
-    actions: { showCreate: true, showExport: true, showHelp: true },
-  },
-  finance: {
-    title: '財務管理（點數 / 交易）',
-    subtitle: '用戶餘額、交易流水與提領審核工作台。',
-    actions: { showExport: true, showRefresh: true, showHelp: true },
-  },
-  payments: {
-    title: '支付管理（通道 / 對帳）',
-    subtitle: '充值通道、人工審核與對帳報表統一入口。',
-    actions: { showExport: true, showRefresh: true, showHelp: true },
-  },
-  revenue: {
-    title: '收益分析',
-    subtitle: '平台總收益、Top 主播與禮物銷售分析。',
-    actions: { showExport: true, showHelp: true },
-  },
-  live: {
-    title: '直播管理',
-    subtitle: '實時監控直播狀態、聊天與單場收益。',
-    actions: { showRefresh: true, showHelp: true },
-  },
-  gifts: {
-    title: '禮物管理',
-    subtitle: '配置禮物目錄、價格與銷售統計。',
-    actions: { showCreate: true, showExport: true, showHelp: true },
-  },
-  broadcasterApplications: {
-    title: '主播申請審核',
-    subtitle: '管理主播申請與審核結果，串聯 Player 與 RBAC。',
-    actions: { showRefresh: true, showHelp: true },
-  },
-  moderation: {
-    title: '舉報 / 風控稽核',
-    subtitle: '處理舉報與封禁，保障內容與平台安全。',
-    actions: { showExport: true, showHelp: true },
-  },
-  prediction: {
-    title: '預測市場管理',
-    subtitle: '管理預測市場與押注記錄，配合風控。',
-    actions: { showExport: true, showHelp: true },
-  },
-  rbac: {
-    title: '權限管理（RBAC）',
-    subtitle: '管理管理員、角色與細粒度操作許可。',
-    actions: { showCreate: true, showExport: true, showHelp: true },
-  },
-  system: {
-    title: '系統設定與公告',
-    subtitle: '公告、敏感詞、抽成比例與主題切換。',
-    actions: { showCreate: true, showHelp: true },
-  },
-  reports: {
-    title: '報表中心',
-    subtitle: '日常運營與財務稽核所需的各類報表入口。',
-    actions: { showExport: true, showHelp: true },
-  },
+> {
+  return {
+    dashboard: {
+      title: t('modules.dashboard.title'),
+      subtitle: t('modules.dashboard.subtitle'),
+      actions: { showRefresh: true, showHelp: true },
+    },
+    players: {
+      title: t('modules.players.title'),
+      subtitle: t('modules.players.subtitle'),
+      actions: { showCreate: false, showExport: true, showRefresh: true, showHelp: true },
+    },
+    membership: {
+      title: t('modules.membership.title'),
+      subtitle: t('modules.membership.subtitle'),
+      actions: { showCreate: true, showRefresh: true, showHelp: true },
+    },
+    bonus: {
+      title: t('modules.bonus.title'),
+      subtitle: t('modules.bonus.subtitle'),
+      actions: { showCreate: true, showExport: true, showHelp: true },
+    },
+    marketing: {
+      title: t('modules.marketing.title'),
+      subtitle: t('modules.marketing.subtitle'),
+      actions: { showCreate: true, showExport: true, showHelp: true },
+    },
+    finance: {
+      title: t('modules.finance.title'),
+      subtitle: t('modules.finance.subtitle'),
+      actions: { showExport: true, showRefresh: true, showHelp: true },
+    },
+    payments: {
+      title: t('modules.payments.title'),
+      subtitle: t('modules.payments.subtitle'),
+      actions: { showExport: true, showRefresh: true, showHelp: true },
+    },
+    revenue: {
+      title: t('modules.revenue.title'),
+      subtitle: t('modules.revenue.subtitle'),
+      actions: { showExport: true, showHelp: true },
+    },
+    live: {
+      title: t('modules.live.title'),
+      subtitle: t('modules.live.subtitle'),
+      actions: { showRefresh: true, showHelp: true },
+    },
+    gifts: {
+      title: t('modules.gifts.title'),
+      subtitle: t('modules.gifts.subtitle'),
+      actions: { showCreate: true, showExport: true, showHelp: true },
+    },
+    broadcasterApplications: {
+      title: t('modules.broadcasterApplications.title'),
+      subtitle: t('modules.broadcasterApplications.subtitle'),
+      actions: { showRefresh: true, showHelp: true },
+    },
+    moderation: {
+      title: t('modules.moderation.title'),
+      subtitle: t('modules.moderation.subtitle'),
+      actions: { showExport: true, showHelp: true },
+    },
+    prediction: {
+      title: t('modules.prediction.title'),
+      subtitle: t('modules.prediction.subtitle'),
+      actions: { showExport: true, showHelp: true },
+    },
+    rbac: {
+      title: t('modules.rbac.title'),
+      subtitle: t('modules.rbac.subtitle'),
+      actions: { showCreate: true, showExport: true, showHelp: true },
+    },
+    system: {
+      title: t('modules.system.title'),
+      subtitle: t('modules.system.subtitle'),
+      actions: { showCreate: true, showHelp: true },
+    },
+    reports: {
+      title: t('modules.reports.title'),
+      subtitle: t('modules.reports.subtitle'),
+      actions: { showExport: true, showHelp: true },
+    },
+  }
 }
 
 /**
  * @description Top-level admin app shell anchored on module state.
  */
 export function AdminApp() {
+  const { t } = useTranslation()
+  const MODULE_META = getModuleMeta(t)
   const [activeModule, setActiveModule] = useState<AdminModuleId>('dashboard')
   /**
    * @description 控制模組切換時的 loading overlay，記錄目前正在載入的模組。
