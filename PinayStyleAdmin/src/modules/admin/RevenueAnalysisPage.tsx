@@ -5,6 +5,7 @@
 
 import { showAlert } from '../../lib/dialog'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   LineChart,
   TrendingUp,
@@ -241,6 +242,7 @@ const blueprintFeatures: FeatureItem[] = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function RevenueAnalysisPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<RevenueTabId>('overview')
 
   // Platform tab
@@ -364,12 +366,12 @@ export function RevenueAnalysisPage() {
         <div className="flex flex-wrap items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 p-0.5">
           {(
             [
-              { id: 'overview', label: '總覽', color: 'bg-slate-700' },
-              { id: 'platform', label: '平台收益', color: 'bg-emerald-600' },
-              { id: 'broadcasters', label: '主播排行', color: 'bg-amber-600' },
-              { id: 'gifts', label: '禮物銷售', color: 'bg-rose-600' },
-              { id: 'streams', label: '直播拆分', color: 'bg-sky-600' },
-              { id: 'blueprint', label: '功能清單', color: 'bg-slate-700' },
+              { id: 'overview', label: t('common.overview'), color: 'bg-slate-700' },
+              { id: 'platform', label: t('tabs.revPlatform'), color: 'bg-emerald-600' },
+              { id: 'broadcasters', label: t('tabs.revBroadcasters'), color: 'bg-amber-600' },
+              { id: 'gifts', label: t('tabs.revGifts'), color: 'bg-rose-600' },
+              { id: 'streams', label: t('tabs.revStreams'), color: 'bg-sky-600' },
+              { id: 'blueprint', label: t('common.blueprint'), color: 'bg-slate-700' },
             ] as { id: RevenueTabId; label: string; color: string }[]
           ).map((tab) => (
             <button

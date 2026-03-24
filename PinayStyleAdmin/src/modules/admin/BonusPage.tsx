@@ -10,6 +10,7 @@
 
 import { showAlert, showConfirm, showPrompt } from '../../lib/dialog'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Coins,
   PlusCircle,
@@ -363,6 +364,7 @@ function resolveBonusToPointsRate(
  * @description Bonus 管理主要元件。
  */
 export function BonusPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<BonusTabId>('overview')
 
   /** Bonus 分級 */
@@ -1176,7 +1178,7 @@ export function BonusPage() {
                 : 'text-slate-200 hover:bg-slate-800/80',
             ].join(' ')}
           >
-            總覽
+            {t('common.overview')}
           </button>
           <button
             type="button"
@@ -1188,7 +1190,7 @@ export function BonusPage() {
                 : 'text-slate-200 hover:bg-slate-800/80',
             ].join(' ')}
           >
-            Bonus 分級
+            {t('tabs.bonusTiers')}
           </button>
           <button
             type="button"
@@ -1200,7 +1202,7 @@ export function BonusPage() {
                 : 'text-slate-200 hover:bg-slate-800/80',
             ].join(' ')}
           >
-            兌換率配置
+            {t('tabs.bonusRates')}
           </button>
           <button
             type="button"
@@ -1212,7 +1214,7 @@ export function BonusPage() {
                 : 'text-slate-200 hover:bg-slate-800/80',
             ].join(' ')}
           >
-            Bonus 發放
+            {t('tabs.bonusIssuance')}
           </button>
           <button
             type="button"
@@ -1224,7 +1226,7 @@ export function BonusPage() {
                 : 'text-slate-200 hover:bg-slate-800/80',
             ].join(' ')}
           >
-            扣回 / 回滾
+            {t('tabs.bonusRollback')}
           </button>
           <button
             type="button"
@@ -1236,7 +1238,7 @@ export function BonusPage() {
                 : 'text-slate-200 hover:bg-slate-800/80',
             ].join(' ')}
           >
-            Bonus 兌換
+            {t('tabs.bonusRedeem')}
           </button>
           <button
             type="button"
@@ -1248,7 +1250,7 @@ export function BonusPage() {
                 : 'text-slate-200 hover:bg-slate-800/80',
             ].join(' ')}
           >
-            Bonus 流水
+            {t('tabs.bonusLedger')}
           </button>
 
           <button
@@ -1261,7 +1263,7 @@ export function BonusPage() {
                 : 'text-slate-200 hover:bg-slate-800/80',
             ].join(' ')}
           >
-            功能清單（規格）
+            {t('common.blueprint')}
           </button>
         </div>
       </section>

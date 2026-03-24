@@ -4,6 +4,7 @@
  */
 
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { showAlert, showConfirm, showPrompt } from '../../lib/dialog'
 import {
   Settings, Megaphone, ShieldAlert, BadgeDollarSign, Server,
@@ -195,6 +196,7 @@ function serviceStatusBadge(s: ServiceStatus['status']) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function SystemSettingsPage() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<SystemTabId>('overview')
 
   // ── Announcements state ──
@@ -380,12 +382,12 @@ export function SystemSettingsPage() {
   // ─── Tabs config ──────────────────────────────────────────────────────────
 
   const TABS: { id: SystemTabId; label: string; icon: React.ReactNode }[] = [
-    { id: 'overview', label: '總覽', icon: <Settings size={13} /> },
-    { id: 'announcements', label: '平台公告', icon: <Megaphone size={13} /> },
-    { id: 'keywords', label: '敏感詞庫', icon: <ShieldAlert size={13} /> },
-    { id: 'revenue', label: '收益配置', icon: <BadgeDollarSign size={13} /> },
-    { id: 'system', label: '系統資訊', icon: <Server size={13} /> },
-    { id: 'blueprint', label: '功能清單', icon: <ListChecks size={13} /> },
+    { id: 'overview', label: t('common.overview'), icon: <Settings size={13} /> },
+    { id: 'announcements', label: t('tabs.sysAnnouncements'), icon: <Megaphone size={13} /> },
+    { id: 'keywords', label: t('tabs.sysKeywords'), icon: <ShieldAlert size={13} /> },
+    { id: 'revenue', label: t('tabs.sysRevenue'), icon: <BadgeDollarSign size={13} /> },
+    { id: 'system', label: t('tabs.sysInfo'), icon: <Server size={13} /> },
+    { id: 'blueprint', label: t('common.blueprint'), icon: <ListChecks size={13} /> },
   ]
 
   // ─── Render ───────────────────────────────────────────────────────────────

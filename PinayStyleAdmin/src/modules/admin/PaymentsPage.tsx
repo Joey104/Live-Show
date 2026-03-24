@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { showAlert, showConfirm, showPrompt } from '../../lib/dialog'
 import {
   CreditCard, ArrowDownCircle, ArrowUpCircle, Receipt, BarChart3,
@@ -201,19 +202,20 @@ function Paginator({ page, total, pageSize, onPrev, onNext, borderColor = 'borde
   page: number; total: number; pageSize: number
   onPrev: () => void; onNext: () => void; borderColor?: string
 }) {
+  const { t } = useTranslation()
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   return (
     <footer className={`flex items-center justify-between border-t ${borderColor} bg-slate-900/80 px-3 py-2 text-[10px] text-slate-300`}>
-      <div>總筆數：{total} · 每頁 {pageSize} 筆</div>
+      <div>{t('common.total', { count: total })} · {t('common.perPage', { size: pageSize })}</div>
       <div className="flex items-center gap-1">
         <button type="button" disabled={page <= 1} onClick={onPrev}
           className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-950/80 px-2 py-1 disabled:opacity-40">
-          <ChevronLeft className="h-3 w-3" /> 上一頁
+          <ChevronLeft className="h-3 w-3" /> {t('common.prevPage')}
         </button>
-        <span>第 {page} / {totalPages} 頁</span>
+        <span>{t('common.pageOf', { page, total: totalPages })}</span>
         <button type="button" disabled={page >= totalPages} onClick={onNext}
           className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-950/80 px-2 py-1 disabled:opacity-40">
-          下一頁 <ChevronRight className="h-3 w-3" />
+          {t('common.nextPage')} <ChevronRight className="h-3 w-3" />
         </button>
       </div>
     </footer>
@@ -223,6 +225,7 @@ function Paginator({ page, total, pageSize, onPrev, onNext, borderColor = 'borde
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function PaymentsPage() {
+  const { t } = useTranslation()
   const [tab, setTab] = useState<PaymentsTabId>('overview')
 
   // Data
@@ -842,15 +845,15 @@ export function PaymentsPage() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   const tabs: { id: PaymentsTabId; label: string; color: string }[] = [
-    { id: 'overview', label: '總覽', color: 'bg-slate-700' },
-    { id: 'deposits', label: '充值列表', color: 'bg-sky-600' },
-    { id: 'thirdparty', label: '第三方支付', color: 'bg-indigo-600' },
-    { id: 'transfer', label: '匯款憑證', color: 'bg-amber-600' },
-    { id: 'manual', label: '人工審核', color: 'bg-violet-600' },
-    { id: 'withdrawal', label: '出金管理', color: 'bg-rose-600' },
-    { id: 'fees', label: '手續費 / 成本', color: 'bg-orange-600' },
-    { id: 'reconciliation', label: '交易對帳', color: 'bg-teal-600' },
-    { id: 'blueprint', label: '功能清單', color: 'bg-slate-700' },
+    { id: 'overview', label: t('common.overview'), color: 'bg-slate-700' },
+    { id: 'deposits', label: t('tabs.payDeposits'), color: 'bg-sky-600' },
+    { id: 'thirdparty', label: t('tabs.payThirdparty'), color: 'bg-indigo-600' },
+    { id: 'transfer', label: t('tabs.payTransfer'), color: 'bg-amber-600' },
+    { id: 'manual', label: t('tabs.payManual'), color: 'bg-violet-600' },
+    { id: 'withdrawal', label: t('tabs.payWithdrawal'), color: 'bg-rose-600' },
+    { id: 'fees', label: t('tabs.payFees'), color: 'bg-orange-600' },
+    { id: 'reconciliation', label: t('tabs.payReconciliation'), color: 'bg-teal-600' },
+    { id: 'blueprint', label: t('common.blueprint'), color: 'bg-slate-700' },
   ]
 
   return (

@@ -5,6 +5,7 @@
 
 import { showAlert, showConfirm } from '../../lib/dialog'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   Gift,
   PlusCircle,
@@ -273,6 +274,7 @@ const rankMedals = ['🥇', '🥈', '🥉']
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function GiftsPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<GiftsTabId>('overview')
 
   // ── Gift catalogue state ──
@@ -604,11 +606,11 @@ export function GiftsPage() {
         <div className="flex flex-wrap items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 p-0.5">
           {(
             [
-              { id: 'overview', label: '總覽' },
-              { id: 'catalogue', label: '禮物目錄' },
-              { id: 'stats', label: '銷售統計' },
-              { id: 'batch', label: '批量管理' },
-              { id: 'blueprint', label: '功能清單' },
+              { id: 'overview', label: t('common.overview') },
+              { id: 'catalogue', label: t('tabs.giftCatalogue') },
+              { id: 'stats', label: t('tabs.giftStats') },
+              { id: 'batch', label: t('tabs.giftBatch') },
+              { id: 'blueprint', label: t('common.blueprint') },
             ] as { id: GiftsTabId; label: string }[]
           ).map(({ id, label }) => (
             <button

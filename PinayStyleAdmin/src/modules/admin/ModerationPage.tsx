@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { showAlert, showConfirm, showPrompt } from '../../lib/dialog'
 import {
   ShieldAlert, Flag, Ban, BookX, ClipboardList, ListChecks,
@@ -156,6 +157,7 @@ const kwCategoryBadge: Record<KeywordCategory, string> = {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function ModerationPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<ModerationTabId>('overview')
 
   const [reports, setReports] = useState<Report[]>(mockReports)
@@ -348,12 +350,12 @@ export function ModerationPage() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   const tabs: { id: ModerationTabId; label: string; color: string }[] = [
-    { id: 'overview', label: '總覽', color: 'bg-slate-700' },
-    { id: 'reports', label: '舉報列表', color: 'bg-rose-600' },
-    { id: 'bans', label: '封禁管理', color: 'bg-amber-600' },
-    { id: 'keywords', label: '敏感詞', color: 'bg-orange-600' },
-    { id: 'audit', label: 'Audit Log', color: 'bg-slate-600' },
-    { id: 'blueprint', label: '功能清單', color: 'bg-slate-700' },
+    { id: 'overview', label: t('common.overview'), color: 'bg-slate-700' },
+    { id: 'reports', label: t('tabs.modReports'), color: 'bg-rose-600' },
+    { id: 'bans', label: t('tabs.modBans'), color: 'bg-amber-600' },
+    { id: 'keywords', label: t('tabs.modKeywords'), color: 'bg-orange-600' },
+    { id: 'audit', label: t('tabs.modAudit'), color: 'bg-slate-600' },
+    { id: 'blueprint', label: t('common.blueprint'), color: 'bg-slate-700' },
   ]
 
   return (

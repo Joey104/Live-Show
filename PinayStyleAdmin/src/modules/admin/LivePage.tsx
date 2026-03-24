@@ -5,6 +5,7 @@
 
 import { showConfirm, showPrompt } from '../../lib/dialog'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   RadioTower,
   Video,
@@ -402,6 +403,7 @@ const blueprintFeatures: import('../../components/common/FeatureList').FeatureIt
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function LivePage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<LiveTabId>('overview')
 
   // streams
@@ -595,12 +597,12 @@ export function LivePage() {
         <div className="flex flex-wrap items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 p-0.5">
           {(
             [
-              { id: 'overview', label: '總覽' },
-              { id: 'streams', label: '直播列表' },
-              { id: 'chat', label: '聊天審核' },
-              { id: 'earnings', label: '收益統計' },
-              { id: 'moderation', label: '風控工作台' },
-              { id: 'blueprint', label: '功能清單' },
+              { id: 'overview', label: t('common.overview') },
+              { id: 'streams', label: t('tabs.liveStreams') },
+              { id: 'chat', label: t('tabs.liveChat') },
+              { id: 'earnings', label: t('tabs.liveEarnings') },
+              { id: 'moderation', label: t('tabs.liveModeration') },
+              { id: 'blueprint', label: t('common.blueprint') },
             ] as { id: LiveTabId; label: string }[]
           ).map((tab) => (
             <button

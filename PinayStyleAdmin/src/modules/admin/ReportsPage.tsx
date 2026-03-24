@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { showAlert } from '../../lib/dialog'
 import {
   BarChart3, Users, Coins, Radio, Megaphone, CreditCard, TrendingUp,
@@ -31,19 +32,20 @@ function Paginator({ page, total, pageSize, onPrev, onNext, borderColor = 'borde
   page: number; total: number; pageSize: number
   onPrev: () => void; onNext: () => void; borderColor?: string
 }) {
+  const { t } = useTranslation()
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   return (
     <footer className={`flex items-center justify-between border-t ${borderColor} bg-slate-900/80 px-3 py-2 text-[10px] text-slate-300`}>
-      <div>總筆數：{total} · 每頁 {pageSize} 筆</div>
+      <div>{t('common.total', { count: total })} · {t('common.perPage', { size: pageSize })}</div>
       <div className="flex items-center gap-1">
         <button type="button" disabled={page <= 1} onClick={onPrev}
           className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-950/80 px-2 py-1 disabled:opacity-40 text-[10px]">
-          <ChevronLeft className="h-3 w-3" /> 上一頁
+          <ChevronLeft className="h-3 w-3" /> {t('common.prevPage')}
         </button>
-        <span>第 {page} / {totalPages} 頁</span>
+        <span>{t('common.pageOf', { page, total: totalPages })}</span>
         <button type="button" disabled={page >= totalPages} onClick={onNext}
           className="inline-flex items-center gap-1 rounded-full border border-slate-700/80 bg-slate-950/80 px-2 py-1 disabled:opacity-40 text-[10px]">
-          下一頁 <ChevronRight className="h-3 w-3" />
+          {t('common.nextPage')} <ChevronRight className="h-3 w-3" />
         </button>
       </div>
     </footer>
@@ -308,6 +310,7 @@ function mockBonusRedeemReport(): BonusRedeemReportRow[] {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function ReportsPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<ReportsTabId>('overview')
 
   // Sub tabs
@@ -406,14 +409,14 @@ export function ReportsPage() {
 
   // Tab config
   const tabConfig: { id: ReportsTabId; label: string; color: string }[] = [
-    { id: 'overview', label: '總覽', color: 'bg-slate-700' },
-    { id: 'user', label: '用戶報表', color: 'bg-sky-600' },
-    { id: 'economy', label: '經濟報表', color: 'bg-emerald-600' },
-    { id: 'live', label: '直播報表', color: 'bg-violet-600' },
-    { id: 'marketing', label: '行銷報表', color: 'bg-amber-600' },
-    { id: 'payment', label: '支付報表', color: 'bg-rose-600' },
-    { id: 'bonus', label: 'Bonus 報表', color: 'bg-indigo-600' },
-    { id: 'blueprint', label: '功能清單', color: 'bg-slate-700' },
+    { id: 'overview', label: t('common.overview'), color: 'bg-slate-700' },
+    { id: 'user', label: t('tabs.rptUser'), color: 'bg-sky-600' },
+    { id: 'economy', label: t('tabs.rptEconomy'), color: 'bg-emerald-600' },
+    { id: 'live', label: t('tabs.rptLive'), color: 'bg-violet-600' },
+    { id: 'marketing', label: t('tabs.rptMarketing'), color: 'bg-amber-600' },
+    { id: 'payment', label: t('tabs.rptPayment'), color: 'bg-rose-600' },
+    { id: 'bonus', label: t('tabs.rptBonus'), color: 'bg-indigo-600' },
+    { id: 'blueprint', label: t('common.blueprint'), color: 'bg-slate-700' },
   ]
 
   const overviewCards = [

@@ -4,6 +4,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { showAlert, showConfirm, showPrompt } from '../../lib/dialog'
 import {
   Gift, Megaphone, Ticket, Users, Grid3x3, CheckSquare,
@@ -330,6 +331,7 @@ const blueprintFeatures: FeatureItem[] = [
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function MarketingPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<MarketingTabId>('overview')
 
   // campaigns
@@ -645,14 +647,14 @@ export function MarketingPage() {
         </div>
         <div className="flex flex-wrap items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 p-0.5">
           {([
-            ['overview', '總覽', 'bg-slate-700'],
-            ['campaigns', '活動管理', 'bg-emerald-600'],
-            ['coupons', '優惠券', 'bg-amber-600'],
-            ['referral', '推薦分潤', 'bg-indigo-600'],
-            ['matrix', '分潤矩陣', 'bg-violet-600'],
-            ['tasks', '成長任務', 'bg-sky-600'],
-            ['progress', '任務進度', 'bg-teal-600'],
-            ['blueprint', '功能清單', 'bg-slate-700'],
+            ['overview', t('common.overview'), 'bg-slate-700'],
+            ['campaigns', t('tabs.mktCampaigns'), 'bg-emerald-600'],
+            ['coupons', t('tabs.mktCoupons'), 'bg-amber-600'],
+            ['referral', t('tabs.mktReferral'), 'bg-indigo-600'],
+            ['matrix', t('tabs.mktMatrix'), 'bg-violet-600'],
+            ['tasks', t('tabs.mktTasks'), 'bg-sky-600'],
+            ['progress', t('tabs.mktProgress'), 'bg-teal-600'],
+            ['blueprint', t('common.blueprint'), 'bg-slate-700'],
           ] as [MarketingTabId, string, string][]).map(([id, label, activeClass]) => (
             <button
               key={id}

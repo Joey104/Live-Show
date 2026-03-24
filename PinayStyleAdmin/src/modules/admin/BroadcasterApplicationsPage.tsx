@@ -9,6 +9,7 @@
 
 import { showAlert, showConfirm } from '../../lib/dialog'
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   FlagTriangleRight,
   Eye,
@@ -216,6 +217,7 @@ function statusClass(s: ApplicationStatus): string {
 // ─── 主元件 ───────────────────────────────────────────────────────────────────
 
 export function BroadcasterApplicationsPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<ApplicationTabId>('overview')
   const [rows, setRows] = useState<BroadcasterApplication[]>(() => createMockApplications())
 
@@ -446,10 +448,10 @@ export function BroadcasterApplicationsPage() {
         <div className="flex flex-wrap items-center gap-1 rounded-full border border-slate-700/80 bg-slate-900/80 p-0.5">
           {(
             [
-              { id: 'overview', label: '總覽', activeClass: 'bg-slate-700 text-white' },
-              { id: 'applications', label: '申請清單', activeClass: 'bg-amber-600 text-white' },
-              { id: 'history', label: '審核記錄', activeClass: 'bg-sky-600 text-white' },
-              { id: 'blueprint', label: '功能清單（規格）', activeClass: 'bg-slate-700 text-white' },
+              { id: 'overview', label: t('common.overview'), activeClass: 'bg-slate-700 text-white' },
+              { id: 'applications', label: t('tabs.broadcasterApplications'), activeClass: 'bg-amber-600 text-white' },
+              { id: 'history', label: t('tabs.broadcasterHistory'), activeClass: 'bg-sky-600 text-white' },
+              { id: 'blueprint', label: t('common.blueprint'), activeClass: 'bg-slate-700 text-white' },
             ] as { id: ApplicationTabId; label: string; activeClass: string }[]
           ).map((tab) => (
             <button

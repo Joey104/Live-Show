@@ -5,6 +5,7 @@
  */
 
 import { useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { showAlert, showConfirm, showPrompt } from '../../lib/dialog'
 import {
   TrendingUp, BarChart3, List, Gavel, ListChecks,
@@ -120,6 +121,7 @@ const betStatusBadge: Record<BetStatus, string> = {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function PredictionMarketPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<PredictionTabId>('overview')
   const [markets, setMarkets] = useState<PredictionMarket[]>(mockMarkets)
   const [bets, setBets] = useState<BetRecord[]>(mockBets)
@@ -234,11 +236,11 @@ export function PredictionMarketPage() {
   // ─── Render ────────────────────────────────────────────────────────────────
 
   const tabs: { id: PredictionTabId; label: string; color: string }[] = [
-    { id: 'overview', label: '總覽', color: 'bg-slate-700' },
-    { id: 'markets', label: '市場列表', color: 'bg-sky-600' },
-    { id: 'bets', label: '押注記錄', color: 'bg-violet-600' },
-    { id: 'settlement', label: '強制結算', color: 'bg-amber-600' },
-    { id: 'blueprint', label: '功能清單', color: 'bg-slate-700' },
+    { id: 'overview', label: t('common.overview'), color: 'bg-slate-700' },
+    { id: 'markets', label: t('tabs.predMarkets'), color: 'bg-sky-600' },
+    { id: 'bets', label: t('tabs.predBets'), color: 'bg-violet-600' },
+    { id: 'settlement', label: t('tabs.predSettlement'), color: 'bg-amber-600' },
+    { id: 'blueprint', label: t('common.blueprint'), color: 'bg-slate-700' },
   ]
 
   return (

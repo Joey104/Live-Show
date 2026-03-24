@@ -5,6 +5,7 @@
  */
 
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { showAlert, showConfirm } from '../../lib/dialog'
 import {
   Shield,
@@ -323,6 +324,7 @@ function getAdminEffectiveModules(admin: Admin, roles: Role[]): string[] {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function RbacPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<RbacTabId>('overview')
 
   // ── Data ─────────────────────────────────────────────────────────────────────
@@ -623,12 +625,12 @@ export function RbacPage() {
   // ── Render ────────────────────────────────────────────────────────────────────
 
   const tabs: { id: RbacTabId; label: string; color: string }[] = [
-    { id: 'overview', label: '總覽', color: 'bg-slate-700' },
-    { id: 'admins', label: '管理員帳號', color: 'bg-sky-600' },
-    { id: 'roles', label: '角色管理', color: 'bg-indigo-600' },
-    { id: 'permissions', label: '權限配置', color: 'bg-violet-600' },
-    { id: 'audit', label: 'Audit Log', color: 'bg-amber-600' },
-    { id: 'blueprint', label: '功能清單', color: 'bg-slate-700' },
+    { id: 'overview', label: t('common.overview'), color: 'bg-slate-700' },
+    { id: 'admins', label: t('tabs.rbacAdmins'), color: 'bg-sky-600' },
+    { id: 'roles', label: t('tabs.rbacRoles'), color: 'bg-indigo-600' },
+    { id: 'permissions', label: t('tabs.rbacPermissions'), color: 'bg-violet-600' },
+    { id: 'audit', label: t('tabs.rbacAudit'), color: 'bg-amber-600' },
+    { id: 'blueprint', label: t('common.blueprint'), color: 'bg-slate-700' },
   ]
 
   const adminStatusBadge: Record<AdminStatus, string> = {
